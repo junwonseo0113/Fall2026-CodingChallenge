@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, ImagePlus, Trash2 } from "lucide-react";
+import { ArrowLeft, ImagePlus, Search, Trash2 } from "lucide-react";
 import { api, apiErrorMessage } from "@/lib/api";
 import type { Collection, SearchResult } from "@/lib/types";
 import { relativeTime } from "@/lib/relativeTime";
@@ -9,6 +9,7 @@ import { useCollectionActivityNotifications } from "@/hooks/useCollectionActivit
 import { useAuth } from "@/context/AuthContext";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { MasonryGrid } from "@/components/MasonryGrid";
 import { ItemCard } from "@/components/ItemCard";
 import { ImageSearchDialog } from "@/components/ImageSearchDialog";
@@ -21,6 +22,7 @@ export function CollectionDetail() {
   const navigate = useNavigate();
   const [collection, setCollection] = React.useState<Collection | null>(null);
   const [searchOpen, setSearchOpen] = React.useState(false);
+  const [filterQuery, setFilterQuery] = React.useState("");
 
   const load = React.useCallback(async () => {
     try {
@@ -50,6 +52,15 @@ export function CollectionDetail() {
   const isOwner = collection.owner.id === user?.id;
   const canEdit =
     isOwner || collection.collaborators.some((c) => c.id === user?.id);
+
+  const normalizedFilter = filterQuery.trim().toLowerCase();
+  const filteredItems = normalizedFilter
+    ? collection.items.filter(
+        (item) =>
+          item.title.toLowerCase().includes(normalizedFilter) ||
+          item.note.toLowerCase().includes(normalizedFilter)
+      )
+    : collection.items;
 
   async function handleAddFromSearch(result: SearchResult) {
     // Optimistic update: show the item immediately, roll back if the request fails.
@@ -177,17 +188,35 @@ export function CollectionDetail() {
             )}
           </div>
         ) : (
-          <MasonryGrid className="mt-6">
-            {collection.items.map((item) => (
-              <ItemCard
-                key={item.id}
-                item={item}
-                canEdit={canEdit}
-                onEdit={(note) => handleEditItem(item.id, note)}
-                onRemove={() => handleRemoveItem(item.id)}
+          <>
+            <div className="relative mt-4 max-w-xs">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+              <Input
+                placeholder="Filter by title or note..."
+                className="pl-9"
+                value={filterQuery}
+                onChange={(e) => setFilterQuery(e.target.value)}
               />
-            ))}
-          </MasonryGrid>
+            </div>
+
+            {filteredItems.length === 0 ? (
+              <p className="mt-8 text-center text-[var(--muted-foreground)]">
+                No saved images match "{filterQuery}".
+              </p>
+            ) : (
+              <MasonryGrid className="mt-6">
+                {filteredItems.map((item) => (
+                  <ItemCard
+                    key={item.id}
+                    item={item}
+                    canEdit={canEdit}
+                    onEdit={(note) => handleEditItem(item.id, note)}
+                    onRemove={() => handleRemoveItem(item.id)}
+                  />
+                ))}
+              </MasonryGrid>
+            )}
+          </>
         )}
       </main>
 
