@@ -1,15 +1,16 @@
 import * as React from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, ImagePlus, Trash2 } from "lucide-react";
 import { api, apiErrorMessage } from "@/lib/api";
-import type { Collection } from "@/lib/types";
+import type { Collection, SearchResult } from "@/lib/types";
 import { relativeTime } from "@/lib/relativeTime";
 import { useAuth } from "@/context/AuthContext";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { MasonryGrid } from "@/components/MasonryGrid";
 import { ItemCard } from "@/components/ItemCard";
+import { ImageSearchDialog } from "@/components/ImageSearchDialog";
 import { EditCollectionDialog } from "@/components/EditCollectionDialog";
 
 export function CollectionDetail() {
@@ -17,6 +18,7 @@ export function CollectionDetail() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [collection, setCollection] = React.useState<Collection | null>(null);
+  const [searchOpen, setSearchOpen] = React.useState(false);
 
   const load = React.useCallback(async () => {
     try {
@@ -44,6 +46,21 @@ export function CollectionDetail() {
   const isOwner = collection.owner.id === user?.id;
   const canEdit =
     isOwner || collection.collaborators.some((c) => c.id === user?.id);
+
+  async function handleAddFromSearch(result: SearchResult) {
+    try {
+      const res = await api.post(`/collections/${id}/items`, {
+        imageUrl: result.imageUrl,
+        thumbUrl: result.thumbUrl,
+        sourceUrl: result.sourceUrl,
+        title: result.title,
+      });
+      setCollection(res.data.collection);
+      toast.success("Saved to collection");
+    } catch (err) {
+      toast.error(apiErrorMessage(err, "Failed to save image"));
+    }
+  }
 
   async function handleEditItem(itemId: string, note: string) {
     try {
@@ -116,6 +133,12 @@ export function CollectionDetail() {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            {canEdit && (
+              <Button onClick={() => setSearchOpen(true)}>
+                <ImagePlus className="h-4 w-4" />
+                Add images
+              </Button>
+            )}
             {isOwner && <EditCollectionDialog collection={collection} onSave={handleUpdateDetails} />}
             {isOwner && (
               <Button variant="destructive" size="icon" onClick={handleDeleteCollection}>
@@ -127,7 +150,12 @@ export function CollectionDetail() {
 
         {collection.items.length === 0 ? (
           <div className="mt-10 rounded-2xl border border-dashed border-[var(--border)] p-12 text-center text-[var(--muted-foreground)]">
-            No images saved yet.
+            No images saved yet.{" "}
+            {canEdit && (
+              <button className="font-medium text-[var(--primary)]" onClick={() => setSearchOpen(true)}>
+                Search for some
+              </button>
+            )}
           </div>
         ) : (
           <MasonryGrid className="mt-6">
@@ -143,6 +171,13 @@ export function CollectionDetail() {
           </MasonryGrid>
         )}
       </main>
+
+      <ImageSearchDialog
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        onAdd={handleAddFromSearch}
+        savedImageUrls={new Set(collection.items.map((i) => i.imageUrl))}
+      />
     </div>
   );
 }
