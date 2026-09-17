@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { MasonryGrid } from "@/components/MasonryGrid";
 import { ItemCard } from "@/components/ItemCard";
 import { ImageSearchDialog } from "@/components/ImageSearchDialog";
+import { ShareDialog } from "@/components/ShareDialog";
 import { EditCollectionDialog } from "@/components/EditCollectionDialog";
 
 export function CollectionDetail() {
@@ -140,6 +141,7 @@ export function CollectionDetail() {
               </Button>
             )}
             {isOwner && <EditCollectionDialog collection={collection} onSave={handleUpdateDetails} />}
+            {isOwner && <ShareDialog collection={collection} onUpdate={load} />}
             {isOwner && (
               <Button variant="destructive" size="icon" onClick={handleDeleteCollection}>
                 <Trash2 className="h-4 w-4" />

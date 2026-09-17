@@ -5,6 +5,7 @@ import { Login } from "@/pages/Login";
 import { Register } from "@/pages/Register";
 import { Dashboard } from "@/pages/Dashboard";
 import { CollectionDetail } from "@/pages/CollectionDetail";
+import { PublicCollection } from "@/pages/PublicCollection";
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/shared/:slug" element={<PublicCollection />} />
 
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Dashboard />} />
