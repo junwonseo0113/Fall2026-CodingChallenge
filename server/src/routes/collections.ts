@@ -136,6 +136,7 @@ collectionsRouter.get("/:id", async (req: AuthedRequest, res, next) => {
 const updateCollectionSchema = z.object({
   name: z.string().trim().min(1).optional(),
   description: z.string().trim().max(500).optional(),
+  isPublic: z.boolean().optional(),
 });
 
 collectionsRouter.patch("/:id", async (req: AuthedRequest, res, next) => {
