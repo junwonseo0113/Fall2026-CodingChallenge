@@ -49,6 +49,19 @@ export function CollectionDetail() {
     isOwner || collection.collaborators.some((c) => c.id === user?.id);
 
   async function handleAddFromSearch(result: SearchResult) {
+    // Optimistic update: show the item immediately, roll back if the request fails.
+    const optimisticItem = {
+      id: `optimistic-${result.id}`,
+      imageUrl: result.imageUrl,
+      thumbUrl: result.thumbUrl,
+      sourceUrl: result.sourceUrl,
+      title: result.title,
+      note: "",
+      addedBy: user,
+      createdAt: new Date().toISOString(),
+    };
+    setCollection((prev) => (prev ? { ...prev, items: [optimisticItem, ...prev.items] } : prev));
+
     try {
       const res = await api.post(`/collections/${id}/items`, {
         imageUrl: result.imageUrl,
@@ -60,6 +73,7 @@ export function CollectionDetail() {
       toast.success("Saved to collection");
     } catch (err) {
       toast.error(apiErrorMessage(err, "Failed to save image"));
+      load();
     }
   }
 
