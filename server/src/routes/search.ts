@@ -35,7 +35,10 @@ interface UnsplashSearchResponse {
 searchRouter.get("/", async (req, res, next) => {
   try {
     if (!env.unsplashAccessKey) {
-      throw new AppError(500, "Server is missing UNSPLASH_ACCESS_KEY");
+      throw new AppError(
+        500,
+        "Set a real UNSPLASH_ACCESS_KEY in server/.env (get one free at unsplash.com/oauth/applications)"
+      );
     }
 
     const { q, page } = querySchema.parse(req.query);
