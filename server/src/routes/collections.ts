@@ -222,12 +222,13 @@ const addItemSchema = z.object({
 /**
  * POST /api/collections/:id/items -- requires auth + owner/collaborator access.
  * Body: { imageUrl, thumbUrl, sourceUrl?, title?, note? }.
- * Saves an image into the collection.
+ * Saves an image into the collection. Allowed even while time-locked -- this
+ * is the "blind upload": collaborators can contribute, but the item list
+ * (including their own upload) stays hidden from them until it unlocks.
  */
 collectionsRouter.post("/:id/items", async (req: AuthedRequest, res, next) => {
   try {
     const collection = await loadAccessibleCollection(req.params.id, req.userId!);
-    guardUnlocked(collection, req.userId!);
     const data = addItemSchema.parse(req.body);
 
     collection.items.push({ ...data, addedBy: new Types.ObjectId(req.userId) });
