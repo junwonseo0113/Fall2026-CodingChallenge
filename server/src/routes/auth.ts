@@ -14,6 +14,11 @@ const registerSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
+/**
+ * POST /api/auth/register -- public.
+ * Body: { name, email, password }.
+ * Creates an account and returns { token, user }.
+ */
 authRouter.post("/register", async (req, res, next) => {
   try {
     const { name, email, password } = registerSchema.parse(req.body);
@@ -41,6 +46,11 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+/**
+ * POST /api/auth/login -- public.
+ * Body: { email, password }.
+ * Returns { token, user } on success, 401 on bad credentials.
+ */
 authRouter.post("/login", async (req, res, next) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
@@ -62,6 +72,10 @@ authRouter.post("/login", async (req, res, next) => {
   }
 });
 
+/**
+ * GET /api/auth/me -- requires Authorization: Bearer <token>.
+ * Returns the current user's { id, name, email }.
+ */
 authRouter.get("/me", requireAuth, async (req: AuthedRequest, res, next) => {
   try {
     const user = await UserModel.findById(req.userId);

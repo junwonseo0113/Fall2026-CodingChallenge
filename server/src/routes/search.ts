@@ -27,7 +27,11 @@ interface UnsplashSearchResponse {
   total_pages: number;
 }
 
-// Proxies image search to Unsplash so the API key never reaches the browser.
+/**
+ * GET /api/search?q=&page= -- requires auth.
+ * Proxies image search to Unsplash so the API key never reaches the browser.
+ * Returns { results, totalPages }.
+ */
 searchRouter.get("/", async (req, res, next) => {
   try {
     if (!env.unsplashAccessKey) {

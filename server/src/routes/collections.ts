@@ -88,7 +88,10 @@ function serialize(collection: CollectionDocument) {
   };
 }
 
-// List all collections the current user owns or collaborates on.
+/**
+ * GET /api/collections -- requires auth.
+ * Returns { collections } the current user owns or collaborates on.
+ */
 collectionsRouter.get("/", async (req: AuthedRequest, res, next) => {
   try {
     const collections = await CollectionModel.find({
@@ -107,6 +110,11 @@ const createCollectionSchema = z.object({
   description: z.string().trim().max(500).optional(),
 });
 
+/**
+ * POST /api/collections -- requires auth.
+ * Body: { name, description? }.
+ * Creates a collection owned by the current user.
+ */
 collectionsRouter.post("/", async (req: AuthedRequest, res, next) => {
   try {
     const { name, description } = createCollectionSchema.parse(req.body);
@@ -124,6 +132,10 @@ collectionsRouter.post("/", async (req: AuthedRequest, res, next) => {
   }
 });
 
+/**
+ * GET /api/collections/:id -- requires auth + owner/collaborator access.
+ * Returns a single collection with its items.
+ */
 collectionsRouter.get("/:id", async (req: AuthedRequest, res, next) => {
   try {
     const collection = await loadAccessibleCollection(req.params.id, req.userId!);
@@ -139,6 +151,11 @@ const updateCollectionSchema = z.object({
   isPublic: z.boolean().optional(),
 });
 
+/**
+ * PATCH /api/collections/:id -- requires auth + ownership.
+ * Body: { name?, description?, isPublic? }.
+ * Updates collection settings, including the public/private share toggle.
+ */
 collectionsRouter.patch("/:id", async (req: AuthedRequest, res, next) => {
   try {
     const collection = await loadAccessibleCollection(req.params.id, req.userId!);
@@ -153,6 +170,10 @@ collectionsRouter.patch("/:id", async (req: AuthedRequest, res, next) => {
   }
 });
 
+/**
+ * DELETE /api/collections/:id -- requires auth + ownership.
+ * Deletes the collection and all of its items.
+ */
 collectionsRouter.delete("/:id", async (req: AuthedRequest, res, next) => {
   try {
     const collection = await loadAccessibleCollection(req.params.id, req.userId!);
@@ -176,6 +197,11 @@ const addItemSchema = z.object({
   note: z.string().trim().max(1000).optional(),
 });
 
+/**
+ * POST /api/collections/:id/items -- requires auth + owner/collaborator access.
+ * Body: { imageUrl, thumbUrl, sourceUrl?, title?, note? }.
+ * Saves an image into the collection.
+ */
 collectionsRouter.post("/:id/items", async (req: AuthedRequest, res, next) => {
   try {
     const collection = await loadAccessibleCollection(req.params.id, req.userId!);
@@ -195,6 +221,11 @@ const editItemSchema = z.object({
   note: z.string().trim().max(1000).optional(),
 });
 
+/**
+ * PATCH /api/collections/:id/items/:itemId -- requires auth + owner/collaborator access.
+ * Body: { title?, note? }.
+ * Edits a saved item's caption/note.
+ */
 collectionsRouter.patch("/:id/items/:itemId", async (req: AuthedRequest, res, next) => {
   try {
     const collection = await loadAccessibleCollection(req.params.id, req.userId!);
@@ -211,6 +242,10 @@ collectionsRouter.patch("/:id/items/:itemId", async (req: AuthedRequest, res, ne
   }
 });
 
+/**
+ * DELETE /api/collections/:id/items/:itemId -- requires auth + owner/collaborator access.
+ * Removes an item from the collection.
+ */
 collectionsRouter.delete("/:id/items/:itemId", async (req: AuthedRequest, res, next) => {
   try {
     const collection = await loadAccessibleCollection(req.params.id, req.userId!);
@@ -232,6 +267,11 @@ const inviteSchema = z.object({
   email: z.string().trim().email(),
 });
 
+/**
+ * POST /api/collections/:id/collaborators -- requires auth + ownership.
+ * Body: { email }.
+ * Invites an existing account (by email) to collaborate on the collection.
+ */
 collectionsRouter.post("/:id/collaborators", async (req: AuthedRequest, res, next) => {
   try {
     const collection = await loadAccessibleCollection(req.params.id, req.userId!);
@@ -256,6 +296,10 @@ collectionsRouter.post("/:id/collaborators", async (req: AuthedRequest, res, nex
   }
 });
 
+/**
+ * DELETE /api/collections/:id/collaborators/:userId -- requires auth.
+ * The owner can remove any collaborator; a collaborator can remove themselves.
+ */
 collectionsRouter.delete("/:id/collaborators/:userId", async (req: AuthedRequest, res, next) => {
   try {
     const collection = await loadAccessibleCollection(req.params.id, req.userId!);

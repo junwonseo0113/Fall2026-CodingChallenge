@@ -4,8 +4,11 @@ import { AppError } from "../utils/AppError";
 
 export const publicRouter = Router();
 
-// Read-only view of a collection via its share link. No auth required,
-// but the collection must have been toggled to "public" by its owner.
+/**
+ * GET /api/public/:slug -- public, no auth required.
+ * Read-only view of a collection via its share link; 404s unless the
+ * collection has been toggled to "public" by its owner.
+ */
 publicRouter.get("/:slug", async (req, res, next) => {
   try {
     const collection = await CollectionModel.findOne({ shareSlug: req.params.slug });
