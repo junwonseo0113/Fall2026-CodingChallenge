@@ -4,6 +4,7 @@ import { env } from "./config/env";
 import { authRouter } from "./routes/auth";
 import { collectionsRouter } from "./routes/collections";
 import { publicRouter } from "./routes/public";
+import { searchRouter } from "./routes/search";
 import { notFoundHandler, errorHandler } from "./middleware/errorHandler";
 
 export function createApp() {
@@ -17,6 +18,7 @@ export function createApp() {
   app.use("/api/auth", authRouter);
   app.use("/api/collections", collectionsRouter);
   app.use("/api/public", publicRouter);
+  app.use("/api/search", searchRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
