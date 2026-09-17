@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, ImagePlus, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, ImagePlus, Search, Timer, Trash2 } from "lucide-react";
 import { api, apiErrorMessage } from "@/lib/api";
 import type { Collection, SearchResult } from "@/lib/types";
 import { relativeTime } from "@/lib/relativeTime";
@@ -15,6 +15,7 @@ import { ItemCard } from "@/components/ItemCard";
 import { ImageSearchDialog } from "@/components/ImageSearchDialog";
 import { ShareDialog } from "@/components/ShareDialog";
 import { EditCollectionDialog } from "@/components/EditCollectionDialog";
+import { LockedCollectionView } from "@/components/LockedCollectionView";
 
 export function CollectionDetail() {
   const { id } = useParams<{ id: string }>();
@@ -52,6 +53,7 @@ export function CollectionDetail() {
   const isOwner = collection.owner.id === user?.id;
   const canEdit =
     isOwner || collection.collaborators.some((c) => c.id === user?.id);
+  const ownerLockActive = isOwner && !!collection.unlockAt && new Date(collection.unlockAt) > new Date();
 
   const normalizedFilter = filterQuery.trim().toLowerCase();
   const filteredItems = normalizedFilter
@@ -111,9 +113,13 @@ export function CollectionDetail() {
     }
   }
 
-  async function handleUpdateDetails(name: string, description: string) {
+  async function handleUpdateDetails(name: string, description: string, unlockAt: string) {
     try {
-      const res = await api.patch(`/collections/${id}`, { name, description });
+      const res = await api.patch(`/collections/${id}`, {
+        name,
+        description,
+        unlockAt: unlockAt ? new Date(unlockAt).toISOString() : null,
+      });
       setCollection(res.data.collection);
       toast.success("Collection updated");
     } catch (err) {
@@ -159,10 +165,16 @@ export function CollectionDetail() {
                 </>
               )}
             </p>
+            {ownerLockActive && (
+              <p className="mt-1 flex items-center gap-1 text-xs font-medium text-[var(--primary)]">
+                <Timer className="h-3.5 w-3.5" />
+                Locked until {new Date(collection.unlockAt!).toLocaleString()} -- only you can see this until then
+              </p>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {canEdit && (
+            {canEdit && !collection.isLocked && (
               <Button onClick={() => setSearchOpen(true)}>
                 <ImagePlus className="h-4 w-4" />
                 Add images
@@ -178,7 +190,9 @@ export function CollectionDetail() {
           </div>
         </div>
 
-        {collection.items.length === 0 ? (
+        {collection.isLocked ? (
+          <LockedCollectionView unlockAt={collection.unlockAt!} onUnlocked={load} />
+        ) : collection.items.length === 0 ? (
           <div className="mt-10 rounded-2xl border border-dashed border-[var(--border)] p-12 text-center text-[var(--muted-foreground)]">
             No images saved yet.{" "}
             {canEdit && (

@@ -1,16 +1,22 @@
 import { Link } from "react-router-dom";
-import { Globe, Lock, Users } from "lucide-react";
+import { Globe, Lock, Timer, Users } from "lucide-react";
 import type { Collection } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 
 export function CollectionCard({ collection, isOwner }: { collection: Collection; isOwner: boolean }) {
   const covers = collection.items.slice(0, 3);
+  const hasScheduledUnlock = !!collection.unlockAt && new Date(collection.unlockAt) > new Date();
 
   return (
     <Link to={`/collections/${collection.id}`}>
       <Card className="group overflow-hidden transition-shadow hover:shadow-md">
         <div className="grid h-40 grid-cols-3 gap-0.5 bg-[var(--muted)]">
-          {covers.length === 0 ? (
+          {collection.isLocked ? (
+            <div className="col-span-3 flex flex-col items-center justify-center gap-1 text-sm text-[var(--muted-foreground)]">
+              <Timer className="h-5 w-5" />
+              Locked until {new Date(collection.unlockAt!).toLocaleDateString()}
+            </div>
+          ) : covers.length === 0 ? (
             <div className="col-span-3 flex items-center justify-center text-sm text-[var(--muted-foreground)]">
               No images yet
             </div>
@@ -36,11 +42,14 @@ export function CollectionCard({ collection, isOwner }: { collection: Collection
         <div className="p-4">
           <div className="flex items-center justify-between gap-2">
             <h3 className="truncate font-medium">{collection.name}</h3>
-            {collection.isPublic ? (
-              <Globe className="h-4 w-4 shrink-0 text-[var(--muted-foreground)]" />
-            ) : (
-              <Lock className="h-4 w-4 shrink-0 text-[var(--muted-foreground)]" />
-            )}
+            <div className="flex shrink-0 items-center gap-1.5">
+              {hasScheduledUnlock && <Timer className="h-4 w-4 text-[var(--muted-foreground)]" />}
+              {collection.isPublic ? (
+                <Globe className="h-4 w-4 text-[var(--muted-foreground)]" />
+              ) : (
+                <Lock className="h-4 w-4 text-[var(--muted-foreground)]" />
+              )}
+            </div>
           </div>
           <div className="mt-1 flex items-center gap-3 text-xs text-[var(--muted-foreground)]">
             <span>{collection.items.length} items</span>

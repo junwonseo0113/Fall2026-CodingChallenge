@@ -4,11 +4,14 @@ import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { api, apiErrorMessage } from "@/lib/api";
 import { MasonryGrid } from "@/components/MasonryGrid";
+import { LockedCollectionView } from "@/components/LockedCollectionView";
 
 interface PublicCollectionData {
   id: string;
   name: string;
   description: string;
+  isLocked: boolean;
+  unlockAt: string | null;
   items: {
     id: string;
     imageUrl: string;
@@ -24,7 +27,7 @@ export function PublicCollection() {
   const [collection, setCollection] = React.useState<PublicCollectionData | null>(null);
   const [notFound, setNotFound] = React.useState(false);
 
-  React.useEffect(() => {
+  const load = React.useCallback(() => {
     api
       .get(`/public/${slug}`)
       .then((res) => setCollection(res.data.collection))
@@ -33,6 +36,10 @@ export function PublicCollection() {
         setNotFound(true);
       });
   }, [slug]);
+
+  React.useEffect(() => {
+    load();
+  }, [load]);
 
   return (
     <div>
@@ -56,14 +63,18 @@ export function PublicCollection() {
             {collection.description && (
               <p className="mt-1 max-w-xl text-[var(--muted-foreground)]">{collection.description}</p>
             )}
-            <MasonryGrid className="mt-6">
-              {collection.items.map((item) => (
-                <div key={item.id} className="mb-4 break-inside-avoid overflow-hidden rounded-2xl border border-[var(--border)]">
-                  <img src={item.imageUrl} alt={item.title} loading="lazy" className="w-full object-cover" />
-                  {item.note && <p className="p-3 text-sm text-[var(--muted-foreground)]">{item.note}</p>}
-                </div>
-              ))}
-            </MasonryGrid>
+            {collection.isLocked ? (
+              <LockedCollectionView unlockAt={collection.unlockAt!} onUnlocked={load} />
+            ) : (
+              <MasonryGrid className="mt-6">
+                {collection.items.map((item) => (
+                  <div key={item.id} className="mb-4 break-inside-avoid overflow-hidden rounded-2xl border border-[var(--border)]">
+                    <img src={item.imageUrl} alt={item.title} loading="lazy" className="w-full object-cover" />
+                    {item.note && <p className="p-3 text-sm text-[var(--muted-foreground)]">{item.note}</p>}
+                  </div>
+                ))}
+              </MasonryGrid>
+            )}
           </>
         )}
       </main>

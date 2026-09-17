@@ -15,20 +15,22 @@ import {
 export function CreateCollectionDialog({
   onCreate,
 }: {
-  onCreate: (name: string, description: string) => Promise<void>;
+  onCreate: (name: string, description: string, unlockAt: string) => Promise<void>;
 }) {
   const [open, setOpen] = React.useState(false);
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
+  const [unlockAt, setUnlockAt] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await onCreate(name, description);
+      await onCreate(name, description, unlockAt);
       setName("");
       setDescription("");
+      setUnlockAt("");
       setOpen(false);
     } finally {
       setSubmitting(false);
@@ -67,6 +69,18 @@ export function CreateCollectionDialog({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What's this board about?"
             />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="collection-unlock">Time-lock until (optional)</Label>
+            <Input
+              id="collection-unlock"
+              type="datetime-local"
+              value={unlockAt}
+              onChange={(e) => setUnlockAt(e.target.value)}
+            />
+            <p className="text-xs text-[var(--muted-foreground)]">
+              Until this date, only you can see what's in this collection.
+            </p>
           </div>
           <Button type="submit" className="w-full" disabled={submitting}>
             {submitting ? "Creating..." : "Create collection"}

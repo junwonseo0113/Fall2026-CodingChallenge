@@ -24,9 +24,13 @@ export function Dashboard() {
     loadCollections();
   }, [loadCollections]);
 
-  async function handleCreate(name: string, description: string) {
+  async function handleCreate(name: string, description: string, unlockAt: string) {
     try {
-      await api.post("/collections", { name, description });
+      await api.post("/collections", {
+        name,
+        description,
+        unlockAt: unlockAt ? new Date(unlockAt).toISOString() : undefined,
+      });
       toast.success("Collection created");
       loadCollections();
     } catch (err) {

@@ -25,6 +25,8 @@ export interface Collection {
   shareSlug: string;
   items: CollectionItem[];
   lastActivity?: { by: User | null; action: string; at: string };
+  unlockAt: string | null;
+  isLocked: boolean;
   createdAt: string;
   updatedAt: string;
 }
