@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { CollectionModel, isLocked } from "../models/Collection";
+import { CollectionModel, isTimeLocked } from "../models/Collection";
 import { AppError } from "../utils/AppError";
 
 export const publicRouter = Router();
@@ -9,6 +9,9 @@ export const publicRouter = Router();
  * Read-only view of a collection via its share link; 404s unless the
  * collection has been toggled to "public" by its owner. While time-locked,
  * items are hidden and only { isLocked, unlockAt } are returned.
+ * Note: a location-lock (if set) doesn't apply to the public link -- geo
+ * verification is tied to a logged-in account, which anonymous public
+ * viewers don't have.
  */
 publicRouter.get("/:slug", async (req, res, next) => {
   try {
@@ -17,7 +20,7 @@ publicRouter.get("/:slug", async (req, res, next) => {
       throw new AppError(404, "This collection is not available");
     }
 
-    const locked = isLocked(collection);
+    const locked = isTimeLocked(collection);
 
     res.json({
       collection: {
