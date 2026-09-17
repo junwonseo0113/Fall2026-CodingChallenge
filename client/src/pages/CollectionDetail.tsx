@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, ImagePlus, MapPin, Search, Timer, Trash2 } from "lucide-react";
+import { ArrowLeft, ImagePlus, Search, Trash2 } from "lucide-react";
 import { api, apiErrorMessage } from "@/lib/api";
 import type { Collection, SearchResult } from "@/lib/types";
 import { relativeTime } from "@/lib/relativeTime";
@@ -17,6 +17,7 @@ import { ShareDialog } from "@/components/ShareDialog";
 import { EditCollectionDialog } from "@/components/EditCollectionDialog";
 import { LockedCollectionView } from "@/components/LockedCollectionView";
 import { GeoUnlockPrompt } from "@/components/GeoUnlockPrompt";
+import { CollectionLockBanners } from "@/components/CollectionLockBanners";
 import type { LocationLockValue } from "@/components/LocationLockField";
 
 export function CollectionDetail() {
@@ -55,7 +56,6 @@ export function CollectionDetail() {
   const isOwner = collection.owner.id === user?.id;
   const canEdit =
     isOwner || collection.collaborators.some((c) => c.id === user?.id);
-  const ownerLockActive = isOwner && !!collection.unlockAt && new Date(collection.unlockAt) > new Date();
 
   const normalizedFilter = filterQuery.trim().toLowerCase();
   const filteredItems = normalizedFilter
@@ -175,24 +175,7 @@ export function CollectionDetail() {
                 </>
               )}
             </p>
-            {ownerLockActive && (
-              <p className="mt-1 flex items-center gap-1 text-xs font-medium text-[var(--primary)]">
-                <Timer className="h-3.5 w-3.5" />
-                Locked until {new Date(collection.unlockAt!).toLocaleString()} -- only you can see this until then
-              </p>
-            )}
-            {collection.isLocked && canEdit && (
-              <p className="mt-1 flex items-center gap-1 text-xs font-medium text-[var(--primary)]">
-                <Timer className="h-3.5 w-3.5" />
-                Locked -- you can still add photos blindly, but won't see what's inside until it unlocks
-              </p>
-            )}
-            {isOwner && collection.hasGeoLock && (
-              <p className="mt-1 flex items-center gap-1 text-xs font-medium text-[var(--primary)]">
-                <MapPin className="h-3.5 w-3.5" />
-                Requires unlocking within {collection.unlockRadiusMeters}m of the target location
-              </p>
-            )}
+            <CollectionLockBanners collection={collection} isOwner={isOwner} canEdit={canEdit} />
           </div>
 
           <div className="flex flex-wrap gap-2">
