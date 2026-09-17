@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { api, apiErrorMessage } from "@/lib/api";
 import { MasonryGrid } from "@/components/MasonryGrid";
 import { LockedCollectionView } from "@/components/LockedCollectionView";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface PublicCollectionData {
   id: string;
@@ -44,9 +45,12 @@ export function PublicCollection() {
   return (
     <div>
       <header className="border-b border-[var(--border)]">
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4 font-semibold">
-          <Sparkles className="h-5 w-5 text-[var(--primary)]" />
-          Pinboard
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+          <span className="flex items-center gap-2 font-semibold">
+            <Sparkles className="h-5 w-5 text-[var(--primary)]" />
+            Pinboard
+          </span>
+          <ThemeToggle />
         </div>
       </header>
 
