@@ -8,19 +8,26 @@ export function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+  const initial = user?.name?.[0]?.toUpperCase();
+
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--background)]/75 shadow-[var(--shadow-sm)] backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <Link to="/" className="flex items-center gap-2 font-semibold text-lg">
-          <Sparkles className="h-5 w-5 text-[var(--primary)]" />
+        <Link to="/" className="flex items-center gap-2.5 text-lg font-semibold tracking-tight">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[image:var(--gradient-primary)] shadow-[var(--shadow-glow)]">
+            <Sparkles className="h-4 w-4 text-white" />
+          </span>
           Pinboard
         </Link>
         <div className="flex items-center gap-3">
           <ThemeToggle />
           {user && (
             <>
-              <span className="hidden text-sm text-[var(--muted-foreground)] sm:inline">
-                {user.name}
+              <span className="hidden items-center gap-2 sm:flex">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[image:var(--gradient-primary)] text-xs font-semibold text-white">
+                  {initial}
+                </span>
+                <span className="text-sm text-[var(--muted-foreground)]">{user.name}</span>
               </span>
               <Button
                 variant="ghost"

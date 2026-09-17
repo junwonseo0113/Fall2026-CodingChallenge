@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -30,11 +31,17 @@ export function Register() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
-      <Card className="w-full max-w-sm p-8">
-        <h1 className="mb-1 text-2xl font-semibold">Create an account</h1>
-        <p className="mb-6 text-sm text-[var(--muted-foreground)]">
-          Start saving and sharing collections.
-        </p>
+      <div className="w-full max-w-sm">
+        <div className="mb-6 flex justify-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[image:var(--gradient-primary)] shadow-[var(--shadow-glow)]">
+            <Sparkles className="h-6 w-6 text-white" />
+          </span>
+        </div>
+        <Card className="p-8 shadow-[var(--shadow-lg)]">
+          <h1 className="mb-1 text-center text-2xl font-semibold tracking-tight">Create an account</h1>
+          <p className="mb-6 text-center text-sm text-[var(--muted-foreground)]">
+            Start saving and sharing collections.
+          </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="name">Name</Label>
@@ -67,13 +74,14 @@ export function Register() {
             {submitting ? "Creating account..." : "Sign up"}
           </Button>
         </form>
-        <p className="mt-6 text-center text-sm text-[var(--muted-foreground)]">
-          Already have an account?{" "}
-          <Link to="/login" className="font-medium text-[var(--primary)]">
-            Log in
-          </Link>
-        </p>
-      </Card>
+          <p className="mt-6 text-center text-sm text-[var(--muted-foreground)]">
+            Already have an account?{" "}
+            <Link to="/login" className="font-medium text-[var(--primary)]">
+              Log in
+            </Link>
+          </p>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -9,7 +9,7 @@ export function CollectionCard({ collection, isOwner }: { collection: Collection
 
   return (
     <Link to={`/collections/${collection.id}`}>
-      <Card className="group overflow-hidden transition-shadow hover:shadow-md">
+      <Card className="group overflow-hidden transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-lg)]">
         <div className="grid h-40 grid-cols-3 gap-0.5 bg-[var(--muted)]">
           {collection.isLocked ? (
             <div className="col-span-3 flex flex-col items-center justify-center gap-1 text-sm text-[var(--muted-foreground)]">

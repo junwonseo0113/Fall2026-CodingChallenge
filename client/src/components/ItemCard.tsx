@@ -30,8 +30,13 @@ export function ItemCard({
   }
 
   return (
-    <div className="group relative mb-4 break-inside-avoid overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)]">
-      <img src={item.imageUrl} alt={item.title} loading="lazy" className="w-full object-cover" />
+    <div className="group relative mb-4 break-inside-avoid overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-sm)] transition-shadow duration-200 hover:shadow-[var(--shadow-md)]">
+      <img
+        src={item.imageUrl}
+        alt={item.title}
+        loading="lazy"
+        className="w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+      />
 
       {canEdit && (
         <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">

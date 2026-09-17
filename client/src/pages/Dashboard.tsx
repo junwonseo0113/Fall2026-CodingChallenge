@@ -1,4 +1,5 @@
 import * as React from "react";
+import { ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 import { api, apiErrorMessage } from "@/lib/api";
 import type { Collection } from "@/lib/types";
@@ -55,7 +56,7 @@ export function Dashboard() {
       <Navbar />
       <main className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">Your collections</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Your collections</h1>
           <CreateCollectionDialog onCreate={handleCreate} />
         </div>
 
@@ -64,8 +65,13 @@ export function Dashboard() {
         ) : (
           <>
             {owned.length === 0 && shared.length === 0 && (
-              <div className="rounded-2xl border border-dashed border-[var(--border)] p-12 text-center text-[var(--muted-foreground)]">
-                You don't have any collections yet. Create your first one to start saving images.
+              <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-[var(--border)] p-16 text-center">
+                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--muted)]">
+                  <ImagePlus className="h-6 w-6 text-[var(--muted-foreground)]" />
+                </span>
+                <p className="text-[var(--muted-foreground)]">
+                  You don't have any collections yet. Create your first one to start saving images.
+                </p>
               </div>
             )}
 

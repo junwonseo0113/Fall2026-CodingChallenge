@@ -4,15 +4,16 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 cursor-pointer",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-all duration-150 ease-out disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 cursor-pointer active:scale-[0.97]",
   {
     variants: {
       variant: {
-        default: "bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90",
+        default:
+          "bg-[image:var(--gradient-primary)] text-[var(--primary-foreground)] shadow-[var(--shadow-glow)] hover:brightness-110 hover:-translate-y-px",
         outline:
-          "border border-[var(--border)] bg-transparent hover:bg-[var(--muted)] text-[var(--foreground)]",
+          "border border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-sm)] hover:bg-[var(--muted)] text-[var(--foreground)]",
         ghost: "hover:bg-[var(--muted)] text-[var(--foreground)]",
-        destructive: "bg-red-600 text-white hover:bg-red-700",
+        destructive: "bg-red-600 text-white shadow-[var(--shadow-sm)] hover:bg-red-700",
       },
       size: {
         default: "h-10 px-5",
