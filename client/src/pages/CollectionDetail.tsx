@@ -5,6 +5,7 @@ import { ArrowLeft, ImagePlus, Trash2 } from "lucide-react";
 import { api, apiErrorMessage } from "@/lib/api";
 import type { Collection, SearchResult } from "@/lib/types";
 import { relativeTime } from "@/lib/relativeTime";
+import { useCollectionActivityNotifications } from "@/hooks/useCollectionActivityNotifications";
 import { useAuth } from "@/context/AuthContext";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,8 @@ export function CollectionDetail() {
   React.useEffect(() => {
     load();
   }, [load]);
+
+  useCollectionActivityNotifications(collection, user?.id, setCollection);
 
   if (!collection) {
     return (
