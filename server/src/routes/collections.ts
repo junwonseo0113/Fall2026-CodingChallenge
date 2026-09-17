@@ -219,9 +219,10 @@ const updateCollectionSchema = z
 
 /**
  * PATCH /api/collections/:id -- requires auth + ownership.
- * Body: { name?, description?, isPublic?, unlockAt? }.
- * Updates collection settings, including the public/private share toggle
- * and the time-lock date (pass null to clear it).
+ * Body: { name?, description?, isPublic?, unlockAt?, unlockLat?, unlockLng?, unlockRadiusMeters? }.
+ * Updates collection settings, including the public/private share toggle and
+ * the time-lock/location-lock (pass unlockAt/unlockLat/unlockLng/unlockRadiusMeters
+ * as null to clear the corresponding lock).
  */
 collectionsRouter.patch("/:id", async (req: AuthedRequest, res, next) => {
   try {
