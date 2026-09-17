@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Globe, Lock, Timer, Users } from "lucide-react";
+import { Globe, Lock, MapPin, Timer, Users } from "lucide-react";
 import type { Collection } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 
@@ -14,7 +14,11 @@ export function CollectionCard({ collection, isOwner }: { collection: Collection
           {collection.isLocked ? (
             <div className="col-span-3 flex flex-col items-center justify-center gap-1 text-sm text-[var(--muted-foreground)]">
               <Timer className="h-5 w-5" />
-              Locked until {new Date(collection.unlockAt!).toLocaleDateString()}
+              {collection.lockedByTime && collection.unlockAt
+                ? `Locked until ${new Date(collection.unlockAt).toLocaleDateString()}`
+                : collection.lockedByLocation
+                ? "Locked -- requires location"
+                : "Locked"}
             </div>
           ) : covers.length === 0 ? (
             <div className="col-span-3 flex items-center justify-center text-sm text-[var(--muted-foreground)]">
@@ -44,6 +48,7 @@ export function CollectionCard({ collection, isOwner }: { collection: Collection
             <h3 className="truncate font-medium">{collection.name}</h3>
             <div className="flex shrink-0 items-center gap-1.5">
               {hasScheduledUnlock && <Timer className="h-4 w-4 text-[var(--muted-foreground)]" />}
+              {collection.hasGeoLock && <MapPin className="h-4 w-4 text-[var(--muted-foreground)]" />}
               {collection.isPublic ? (
                 <Globe className="h-4 w-4 text-[var(--muted-foreground)]" />
               ) : (
