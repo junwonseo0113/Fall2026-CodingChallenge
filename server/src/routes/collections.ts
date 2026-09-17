@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { Types } from "mongoose";
-import { CollectionModel, isCollaborator, idOf, type CollectionDocument } from "../models/Collection";
+import { CollectionModel, isCollaborator, isLocked, idOf, type CollectionDocument } from "../models/Collection";
 import { UserModel } from "../models/User";
 import { AppError } from "../utils/AppError";
 import { requireAuth, type AuthedRequest } from "../middleware/auth";
@@ -55,13 +55,24 @@ function toUserSummary(value: unknown): UserSummary | null {
 
 /** Saves the doc and re-populates so freshly-pushed refs (new item's addedBy, etc.)
  * come back with names instead of bare ObjectIds. */
-async function saveAndSerialize(collection: CollectionDocument) {
+async function saveAndSerialize(collection: CollectionDocument, viewerId: string) {
   await collection.save();
   await collection.populate(COLLECTION_POPULATE);
-  return serialize(collection);
+  return serialize(collection, viewerId);
 }
 
-function serialize(collection: CollectionDocument) {
+/** Throws if the collection is time-locked and the requester isn't the owner. */
+function guardUnlocked(collection: CollectionDocument, userId: string) {
+  if (isLocked(collection) && idOf(collection.owner) !== userId) {
+    throw new AppError(403, `This collection is locked until ${collection.unlockAt!.toISOString()}`);
+  }
+}
+
+/** Serializes for a specific viewer -- hides item contents while the
+ * collection is time-locked, unless the viewer is the owner. */
+function serialize(collection: CollectionDocument, viewerId: string) {
+  const lockedForViewer = isLocked(collection) && idOf(collection.owner) !== viewerId;
+
   return {
     id: collection.id,
     name: collection.name,
@@ -70,19 +81,25 @@ function serialize(collection: CollectionDocument) {
     collaborators: collection.collaborators.map(toUserSummary).filter(Boolean),
     isPublic: collection.isPublic,
     shareSlug: collection.shareSlug,
-    lastActivity: collection.lastActivity?.at
-      ? { by: toUserSummary(collection.lastActivity.by), action: collection.lastActivity.action, at: collection.lastActivity.at }
-      : undefined,
-    items: collection.items.map((item) => ({
-      id: item._id.toString(),
-      imageUrl: item.imageUrl,
-      thumbUrl: item.thumbUrl,
-      sourceUrl: item.sourceUrl,
-      title: item.title,
-      note: item.note,
-      addedBy: toUserSummary(item.addedBy),
-      createdAt: (item as unknown as { createdAt: Date }).createdAt,
-    })),
+    unlockAt: collection.unlockAt,
+    isLocked: lockedForViewer,
+    // Hidden while locked too -- it would otherwise spoil what's inside before the reveal.
+    lastActivity:
+      !lockedForViewer && collection.lastActivity?.at
+        ? { by: toUserSummary(collection.lastActivity.by), action: collection.lastActivity.action, at: collection.lastActivity.at }
+        : undefined,
+    items: lockedForViewer
+      ? []
+      : collection.items.map((item) => ({
+          id: item._id.toString(),
+          imageUrl: item.imageUrl,
+          thumbUrl: item.thumbUrl,
+          sourceUrl: item.sourceUrl,
+          title: item.title,
+          note: item.note,
+          addedBy: toUserSummary(item.addedBy),
+          createdAt: (item as unknown as { createdAt: Date }).createdAt,
+        })),
     createdAt: collection.createdAt,
     updatedAt: collection.updatedAt,
   };
@@ -99,7 +116,7 @@ collectionsRouter.get("/", async (req: AuthedRequest, res, next) => {
     })
       .sort({ updatedAt: -1 })
       .populate(COLLECTION_POPULATE);
-    res.json({ collections: collections.map(serialize) });
+    res.json({ collections: collections.map((c) => serialize(c, req.userId!)) });
   } catch (err) {
     next(err);
   }
@@ -108,25 +125,28 @@ collectionsRouter.get("/", async (req: AuthedRequest, res, next) => {
 const createCollectionSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
   description: z.string().trim().max(500).optional(),
+  unlockAt: z.coerce.date().optional(),
 });
 
 /**
  * POST /api/collections -- requires auth.
- * Body: { name, description? }.
- * Creates a collection owned by the current user.
+ * Body: { name, description?, unlockAt? }.
+ * Creates a collection owned by the current user. If unlockAt is a future
+ * date, the collection starts time-locked for everyone but the owner.
  */
 collectionsRouter.post("/", async (req: AuthedRequest, res, next) => {
   try {
-    const { name, description } = createCollectionSchema.parse(req.body);
+    const { name, description, unlockAt } = createCollectionSchema.parse(req.body);
     const collection = await CollectionModel.create({
       name,
       description: description ?? "",
       owner: req.userId,
       collaborators: [],
       items: [],
+      unlockAt: unlockAt ?? null,
     });
     await collection.populate(COLLECTION_POPULATE);
-    res.status(201).json({ collection: serialize(collection) });
+    res.status(201).json({ collection: serialize(collection, req.userId!) });
   } catch (err) {
     next(err);
   }
@@ -139,7 +159,7 @@ collectionsRouter.post("/", async (req: AuthedRequest, res, next) => {
 collectionsRouter.get("/:id", async (req: AuthedRequest, res, next) => {
   try {
     const collection = await loadAccessibleCollection(req.params.id, req.userId!);
-    res.json({ collection: serialize(collection) });
+    res.json({ collection: serialize(collection, req.userId!) });
   } catch (err) {
     next(err);
   }
@@ -149,12 +169,14 @@ const updateCollectionSchema = z.object({
   name: z.string().trim().min(1).optional(),
   description: z.string().trim().max(500).optional(),
   isPublic: z.boolean().optional(),
+  unlockAt: z.coerce.date().nullable().optional(),
 });
 
 /**
  * PATCH /api/collections/:id -- requires auth + ownership.
- * Body: { name?, description?, isPublic? }.
- * Updates collection settings, including the public/private share toggle.
+ * Body: { name?, description?, isPublic?, unlockAt? }.
+ * Updates collection settings, including the public/private share toggle
+ * and the time-lock date (pass null to clear it).
  */
 collectionsRouter.patch("/:id", async (req: AuthedRequest, res, next) => {
   try {
@@ -164,7 +186,7 @@ collectionsRouter.patch("/:id", async (req: AuthedRequest, res, next) => {
     }
     const updates = updateCollectionSchema.parse(req.body);
     Object.assign(collection, updates);
-    res.json({ collection: await saveAndSerialize(collection) });
+    res.json({ collection: await saveAndSerialize(collection, req.userId!) });
   } catch (err) {
     next(err);
   }
@@ -205,12 +227,13 @@ const addItemSchema = z.object({
 collectionsRouter.post("/:id/items", async (req: AuthedRequest, res, next) => {
   try {
     const collection = await loadAccessibleCollection(req.params.id, req.userId!);
+    guardUnlocked(collection, req.userId!);
     const data = addItemSchema.parse(req.body);
 
     collection.items.push({ ...data, addedBy: new Types.ObjectId(req.userId) });
     collection.lastActivity = { by: new Types.ObjectId(req.userId), action: "added an image", at: new Date() };
 
-    res.status(201).json({ collection: await saveAndSerialize(collection) });
+    res.status(201).json({ collection: await saveAndSerialize(collection, req.userId!) });
   } catch (err) {
     next(err);
   }
@@ -229,6 +252,7 @@ const editItemSchema = z.object({
 collectionsRouter.patch("/:id/items/:itemId", async (req: AuthedRequest, res, next) => {
   try {
     const collection = await loadAccessibleCollection(req.params.id, req.userId!);
+    guardUnlocked(collection, req.userId!);
     const item = collection.items.id(pathParam(req.params.itemId));
     if (!item) throw new AppError(404, "Item not found");
 
@@ -236,7 +260,7 @@ collectionsRouter.patch("/:id/items/:itemId", async (req: AuthedRequest, res, ne
     Object.assign(item, updates);
     collection.lastActivity = { by: new Types.ObjectId(req.userId), action: "edited an image", at: new Date() };
 
-    res.json({ collection: await saveAndSerialize(collection) });
+    res.json({ collection: await saveAndSerialize(collection, req.userId!) });
   } catch (err) {
     next(err);
   }
@@ -249,13 +273,14 @@ collectionsRouter.patch("/:id/items/:itemId", async (req: AuthedRequest, res, ne
 collectionsRouter.delete("/:id/items/:itemId", async (req: AuthedRequest, res, next) => {
   try {
     const collection = await loadAccessibleCollection(req.params.id, req.userId!);
+    guardUnlocked(collection, req.userId!);
     const item = collection.items.id(pathParam(req.params.itemId));
     if (!item) throw new AppError(404, "Item not found");
 
     item.deleteOne();
     collection.lastActivity = { by: new Types.ObjectId(req.userId), action: "removed an image", at: new Date() };
 
-    res.json({ collection: await saveAndSerialize(collection) });
+    res.json({ collection: await saveAndSerialize(collection, req.userId!) });
   } catch (err) {
     next(err);
   }
@@ -290,7 +315,7 @@ collectionsRouter.post("/:id/collaborators", async (req: AuthedRequest, res, nex
     }
 
     collection.collaborators.push(user._id);
-    res.status(201).json({ collection: await saveAndSerialize(collection) });
+    res.status(201).json({ collection: await saveAndSerialize(collection, req.userId!) });
   } catch (err) {
     next(err);
   }
@@ -313,7 +338,7 @@ collectionsRouter.delete("/:id/collaborators/:userId", async (req: AuthedRequest
     collection.collaborators = collection.collaborators.filter(
       (c) => idOf(c) !== targetUserId
     ) as typeof collection.collaborators;
-    res.json({ collection: await saveAndSerialize(collection) });
+    res.json({ collection: await saveAndSerialize(collection, req.userId!) });
   } catch (err) {
     next(err);
   }

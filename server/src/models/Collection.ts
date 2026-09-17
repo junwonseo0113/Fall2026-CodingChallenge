@@ -31,6 +31,9 @@ const collectionSchema = new Schema(
       action: { type: String },
       at: { type: Date },
     },
+    // Time-lock: while set and in the future, only the owner can see the
+    // collection's contents -- everyone else gets a countdown instead.
+    unlockAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
@@ -44,6 +47,11 @@ export function idOf(value: Types.ObjectId | { _id: Types.ObjectId } | null | un
   if (!value) return undefined;
   if (value instanceof Types.ObjectId) return value.toString();
   return value._id.toString();
+}
+
+/** True while the collection's time-lock hasn't reached its unlock date yet. */
+export function isLocked(collection: Pick<Collection, "unlockAt">): boolean {
+  return !!collection.unlockAt && collection.unlockAt.getTime() > Date.now();
 }
 
 export function isCollaborator(
