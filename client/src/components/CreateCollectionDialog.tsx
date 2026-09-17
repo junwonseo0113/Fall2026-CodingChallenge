@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { LocationLockField, type LocationLockValue } from "@/components/LocationLockField";
 import {
   Dialog,
   DialogContent,
@@ -12,25 +13,29 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+const EMPTY_LOCATION: LocationLockValue = { lat: null, lng: null, radiusMeters: null };
+
 export function CreateCollectionDialog({
   onCreate,
 }: {
-  onCreate: (name: string, description: string, unlockAt: string) => Promise<void>;
+  onCreate: (name: string, description: string, unlockAt: string, location: LocationLockValue) => Promise<void>;
 }) {
   const [open, setOpen] = React.useState(false);
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [unlockAt, setUnlockAt] = React.useState("");
+  const [location, setLocation] = React.useState<LocationLockValue>(EMPTY_LOCATION);
   const [submitting, setSubmitting] = React.useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await onCreate(name, description, unlockAt);
+      await onCreate(name, description, unlockAt, location);
       setName("");
       setDescription("");
       setUnlockAt("");
+      setLocation(EMPTY_LOCATION);
       setOpen(false);
     } finally {
       setSubmitting(false);
@@ -82,6 +87,7 @@ export function CreateCollectionDialog({
               Others can add photos blindly until then, but only you can see what's inside.
             </p>
           </div>
+          <LocationLockField value={location} onChange={setLocation} />
           <Button type="submit" className="w-full" disabled={submitting}>
             {submitting ? "Creating..." : "Create collection"}
           </Button>

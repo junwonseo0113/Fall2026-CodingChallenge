@@ -27,6 +27,12 @@ export interface Collection {
   lastActivity?: { by: User | null; action: string; at: string };
   unlockAt: string | null;
   isLocked: boolean;
+  lockedByTime: boolean;
+  lockedByLocation: boolean;
+  hasGeoLock: boolean;
+  unlockLat: number | null;
+  unlockLng: number | null;
+  unlockRadiusMeters: number | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, ImagePlus, Search, Timer, Trash2 } from "lucide-react";
+import { ArrowLeft, ImagePlus, MapPin, Search, Timer, Trash2 } from "lucide-react";
 import { api, apiErrorMessage } from "@/lib/api";
 import type { Collection, SearchResult } from "@/lib/types";
 import { relativeTime } from "@/lib/relativeTime";
@@ -16,6 +16,8 @@ import { ImageSearchDialog } from "@/components/ImageSearchDialog";
 import { ShareDialog } from "@/components/ShareDialog";
 import { EditCollectionDialog } from "@/components/EditCollectionDialog";
 import { LockedCollectionView } from "@/components/LockedCollectionView";
+import { GeoUnlockPrompt } from "@/components/GeoUnlockPrompt";
+import type { LocationLockValue } from "@/components/LocationLockField";
 
 export function CollectionDetail() {
   const { id } = useParams<{ id: string }>();
@@ -113,12 +115,20 @@ export function CollectionDetail() {
     }
   }
 
-  async function handleUpdateDetails(name: string, description: string, unlockAt: string) {
+  async function handleUpdateDetails(
+    name: string,
+    description: string,
+    unlockAt: string,
+    location: LocationLockValue
+  ) {
     try {
       const res = await api.patch(`/collections/${id}`, {
         name,
         description,
         unlockAt: unlockAt ? new Date(unlockAt).toISOString() : null,
+        unlockLat: location.lat,
+        unlockLng: location.lng,
+        unlockRadiusMeters: location.radiusMeters,
       });
       setCollection(res.data.collection);
       toast.success("Collection updated");
@@ -177,6 +187,12 @@ export function CollectionDetail() {
                 Locked -- you can still add photos blindly, but won't see what's inside until it unlocks
               </p>
             )}
+            {isOwner && collection.hasGeoLock && (
+              <p className="mt-1 flex items-center gap-1 text-xs font-medium text-[var(--primary)]">
+                <MapPin className="h-3.5 w-3.5" />
+                Requires unlocking within {collection.unlockRadiusMeters}m of the target location
+              </p>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -197,7 +213,18 @@ export function CollectionDetail() {
         </div>
 
         {collection.isLocked ? (
-          <LockedCollectionView unlockAt={collection.unlockAt!} onUnlocked={load} />
+          <div className="flex flex-col gap-6">
+            {collection.lockedByTime && (
+              <LockedCollectionView unlockAt={collection.unlockAt!} onUnlocked={load} />
+            )}
+            {collection.lockedByLocation && (
+              <GeoUnlockPrompt
+                collectionId={id!}
+                radiusMeters={collection.unlockRadiusMeters}
+                onVerified={load}
+              />
+            )}
+          </div>
         ) : collection.items.length === 0 ? (
           <div className="mt-10 rounded-2xl border border-dashed border-[var(--border)] p-12 text-center text-[var(--muted-foreground)]">
             No images saved yet.{" "}

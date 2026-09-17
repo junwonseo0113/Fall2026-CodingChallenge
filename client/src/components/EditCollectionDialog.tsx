@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { LocationLockField, type LocationLockValue } from "@/components/LocationLockField";
 import type { Collection } from "@/lib/types";
 
 /** Converts an ISO date to the value a <input type="datetime-local"> expects (local time, no seconds/zone). */
@@ -21,24 +22,33 @@ function toDatetimeLocal(iso: string | null): string {
   return new Date(d.getTime() - offsetMs).toISOString().slice(0, 16);
 }
 
+function toLocationValue(collection: Collection): LocationLockValue {
+  return {
+    lat: collection.unlockLat,
+    lng: collection.unlockLng,
+    radiusMeters: collection.unlockRadiusMeters,
+  };
+}
+
 export function EditCollectionDialog({
   collection,
   onSave,
 }: {
   collection: Collection;
-  onSave: (name: string, description: string, unlockAt: string) => Promise<void>;
+  onSave: (name: string, description: string, unlockAt: string, location: LocationLockValue) => Promise<void>;
 }) {
   const [open, setOpen] = React.useState(false);
   const [name, setName] = React.useState(collection.name);
   const [description, setDescription] = React.useState(collection.description);
   const [unlockAt, setUnlockAt] = React.useState(toDatetimeLocal(collection.unlockAt));
+  const [location, setLocation] = React.useState<LocationLockValue>(toLocationValue(collection));
   const [submitting, setSubmitting] = React.useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await onSave(name, description, unlockAt);
+      await onSave(name, description, unlockAt, location);
       setOpen(false);
     } finally {
       setSubmitting(false);
@@ -53,6 +63,7 @@ export function EditCollectionDialog({
           setName(collection.name);
           setDescription(collection.description);
           setUnlockAt(toDatetimeLocal(collection.unlockAt));
+          setLocation(toLocationValue(collection));
         }
         setOpen(next);
       }}
@@ -98,6 +109,7 @@ export function EditCollectionDialog({
               Others can add photos blindly until then, but only you can see what's inside.
             </p>
           </div>
+          <LocationLockField value={location} onChange={setLocation} />
           <Button type="submit" className="w-full" disabled={submitting}>
             {submitting ? "Saving..." : "Save changes"}
           </Button>
