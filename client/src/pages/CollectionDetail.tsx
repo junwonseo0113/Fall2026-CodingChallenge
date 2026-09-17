@@ -171,10 +171,16 @@ export function CollectionDetail() {
                 Locked until {new Date(collection.unlockAt!).toLocaleString()} -- only you can see this until then
               </p>
             )}
+            {collection.isLocked && canEdit && (
+              <p className="mt-1 flex items-center gap-1 text-xs font-medium text-[var(--primary)]">
+                <Timer className="h-3.5 w-3.5" />
+                Locked -- you can still add photos blindly, but won't see what's inside until it unlocks
+              </p>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {canEdit && !collection.isLocked && (
+            {canEdit && (
               <Button onClick={() => setSearchOpen(true)}>
                 <ImagePlus className="h-4 w-4" />
                 Add images

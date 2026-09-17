@@ -95,7 +95,7 @@ export function EditCollectionDialog({
               )}
             </div>
             <p className="text-xs text-[var(--muted-foreground)]">
-              Until this date, only you can see what's in this collection.
+              Others can add photos blindly until then, but only you can see what's inside.
             </p>
           </div>
           <Button type="submit" className="w-full" disabled={submitting}>
