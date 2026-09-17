@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { Types } from "mongoose";
 import { CollectionModel, isCollaborator, idOf, type CollectionDocument } from "../models/Collection";
+import { UserModel } from "../models/User";
 import { AppError } from "../utils/AppError";
 import { requireAuth, type AuthedRequest } from "../middleware/auth";
 
@@ -13,6 +14,7 @@ const USER_POPULATE_FIELDS = "name email";
 /** Sub-document/reference fields that carry a user we want the client to see by name, not raw ObjectId. */
 const COLLECTION_POPULATE = [
   { path: "owner", select: USER_POPULATE_FIELDS },
+  { path: "collaborators", select: USER_POPULATE_FIELDS },
   { path: "items.addedBy", select: USER_POPULATE_FIELDS },
   { path: "lastActivity.by", select: USER_POPULATE_FIELDS },
 ];
@@ -86,10 +88,12 @@ function serialize(collection: CollectionDocument) {
   };
 }
 
-// List all collections the current user owns.
+// List all collections the current user owns or collaborates on.
 collectionsRouter.get("/", async (req: AuthedRequest, res, next) => {
   try {
-    const collections = await CollectionModel.find({ owner: req.userId })
+    const collections = await CollectionModel.find({
+      $or: [{ owner: req.userId }, { collaborators: req.userId }],
+    })
       .sort({ updatedAt: -1 })
       .populate(COLLECTION_POPULATE);
     res.json({ collections: collections.map(serialize) });
@@ -215,6 +219,55 @@ collectionsRouter.delete("/:id/items/:itemId", async (req: AuthedRequest, res, n
     item.deleteOne();
     collection.lastActivity = { by: new Types.ObjectId(req.userId), action: "removed an image", at: new Date() };
 
+    res.json({ collection: await saveAndSerialize(collection) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// --- Collaborators ---
+
+const inviteSchema = z.object({
+  email: z.string().trim().email(),
+});
+
+collectionsRouter.post("/:id/collaborators", async (req: AuthedRequest, res, next) => {
+  try {
+    const collection = await loadAccessibleCollection(req.params.id, req.userId!);
+    if (idOf(collection.owner) !== req.userId) {
+      throw new AppError(403, "Only the owner can invite collaborators");
+    }
+
+    const { email } = inviteSchema.parse(req.body);
+    const user = await UserModel.findOne({ email });
+    if (!user) throw new AppError(404, "No account found with that email");
+    if (user.id === idOf(collection.owner)) {
+      throw new AppError(400, "You already own this collection");
+    }
+    if (isCollaborator(collection, user.id)) {
+      throw new AppError(409, "That user is already a collaborator");
+    }
+
+    collection.collaborators.push(user._id);
+    res.status(201).json({ collection: await saveAndSerialize(collection) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+collectionsRouter.delete("/:id/collaborators/:userId", async (req: AuthedRequest, res, next) => {
+  try {
+    const collection = await loadAccessibleCollection(req.params.id, req.userId!);
+    const isOwner = idOf(collection.owner) === req.userId;
+    const targetUserId = pathParam(req.params.userId);
+    const isSelf = targetUserId === req.userId;
+    if (!isOwner && !isSelf) {
+      throw new AppError(403, "Only the owner can remove other collaborators");
+    }
+
+    collection.collaborators = collection.collaborators.filter(
+      (c) => idOf(c) !== targetUserId
+    ) as typeof collection.collaborators;
     res.json({ collection: await saveAndSerialize(collection) });
   } catch (err) {
     next(err);
