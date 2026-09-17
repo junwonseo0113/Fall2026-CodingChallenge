@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { CollectionModel, isTimeLocked } from "../models/Collection";
+import { CollectionModel, isTimeLocked, hasGeoLock } from "../models/Collection";
 import { AppError } from "../utils/AppError";
 
 export const publicRouter = Router();
@@ -7,11 +7,12 @@ export const publicRouter = Router();
 /**
  * GET /api/public/:slug -- public, no auth required.
  * Read-only view of a collection via its share link; 404s unless the
- * collection has been toggled to "public" by its owner. While time-locked,
+ * collection has been toggled to "public" by its owner. While locked,
  * items are hidden and only { isLocked, unlockAt } are returned.
- * Note: a location-lock (if set) doesn't apply to the public link -- geo
- * verification is tied to a logged-in account, which anonymous public
- * viewers don't have.
+ * Note: a location-lock can't be *verified* here -- geo verification is
+ * tied to a logged-in account, which anonymous public viewers don't have --
+ * so a geo-locked collection just stays permanently locked on the public
+ * link rather than silently skipping that check.
  */
 publicRouter.get("/:slug", async (req, res, next) => {
   try {
@@ -20,7 +21,7 @@ publicRouter.get("/:slug", async (req, res, next) => {
       throw new AppError(404, "This collection is not available");
     }
 
-    const locked = isTimeLocked(collection);
+    const locked = isTimeLocked(collection) || hasGeoLock(collection);
 
     res.json({
       collection: {
