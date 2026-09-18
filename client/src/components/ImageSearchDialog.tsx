@@ -1,11 +1,20 @@
 import * as React from "react";
-import { Search, Plus, Check } from "lucide-react";
+import { Search, Plus, Check, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { api, apiErrorMessage } from "@/lib/api";
 import type { SearchResult } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+function isValidImageUrl(value: string): boolean {
+  try {
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export function ImageSearchDialog({
   open,
@@ -24,6 +33,8 @@ export function ImageSearchDialog({
   const [totalPages, setTotalPages] = React.useState(1);
   const [loading, setLoading] = React.useState(false);
   const [addingId, setAddingId] = React.useState<string | null>(null);
+  const [pastedUrl, setPastedUrl] = React.useState("");
+  const [addingPasted, setAddingPasted] = React.useState(false);
   const sentinelRef = React.useRef<HTMLDivElement | null>(null);
 
   const runSearch = React.useCallback(async (q: string, nextPage: number) => {
@@ -76,13 +87,28 @@ export function ImageSearchDialog({
     }
   }
 
+  async function handleAddPastedUrl(e: React.FormEvent) {
+    e.preventDefault();
+    if (!isValidImageUrl(pastedUrl)) {
+      toast.error("That doesn't look like a valid URL");
+      return;
+    }
+    setAddingPasted(true);
+    try {
+      await onAdd({ id: pastedUrl, title: "", imageUrl: pastedUrl, thumbUrl: pastedUrl, sourceUrl: pastedUrl, credit: "" });
+      setPastedUrl("");
+    } finally {
+      setAddingPasted(false);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Search images</DialogTitle>
         </DialogHeader>
-        <div className="relative mb-4">
+        <div className="relative mb-3">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
           <Input
             autoFocus
@@ -92,6 +118,22 @@ export function ImageSearchDialog({
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
+
+        <form onSubmit={handleAddPastedUrl} className="mb-4 flex gap-2">
+          <div className="relative flex-1">
+            <Link2 className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--muted-foreground)]" />
+            <Input
+              placeholder="...or paste an image URL directly"
+              className="h-9 pl-8 text-sm"
+              value={pastedUrl}
+              onChange={(e) => setPastedUrl(e.target.value)}
+            />
+          </div>
+          <Button type="submit" size="sm" variant="outline" disabled={!pastedUrl || addingPasted}>
+            {addingPasted ? "Adding..." : "Add"}
+          </Button>
+        </form>
+
         <div className="max-h-[60vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {results.map((result) => {
