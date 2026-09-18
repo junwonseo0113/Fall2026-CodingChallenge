@@ -13,12 +13,14 @@ collections, search Unsplash for images and save them into a collection,
 edit/remove saved items, and share a collection either as a public read-only
 link or by inviting specific accounts to collaborate and edit it together.
 
-On top of the base spec, collections can also be turned into "time capsules":
-locked until a chosen date and/or until a viewer proves (via their browser's
-location) they're near a chosen spot, with voice memos attached to individual
-photos that stay completely blind -- hidden from everyone but the owner,
-including from the person who added them -- until the capsule unlocks. See
-FEATURES below for the full list.
+On top of the base spec, the Unsplash integration is hardened rather than
+just wired up: small compressed thumbnails in the search grid with a
+full-resolution fetch only at save time, server-side caching of repeat
+searches so the free tier's rate limit doesn't get burned through, smart
+link resolution so pasting an Unsplash photo page (not just a raw image URL)
+still resolves to the real asset and attribution, and required-by-license
+photographer credit stored and shown on every saved item. See FEATURES below
+for the full list.
 
 ------------------------------------------------------------
 TECH STACK
@@ -50,7 +52,9 @@ Requirements: Node.js 18+ and npm.
    # https://unsplash.com/oauth/applications) if you want the search tab to
    # return real results. Everything else has a working default. If you'd
    # rather skip getting a key, the "Add images" dialog also has a
-   # "...or paste an image URL directly" field that works with no key at all.
+   # "...or paste a link instead" field that works with no key at all for
+   # a direct image URL or any page with an og:image (an Unsplash *page*
+   # link still needs the key, since that goes through the Unsplash API).
    npm run dev
    # Server starts on http://localhost:4000
 
@@ -66,19 +70,13 @@ configuration is needed to connect them locally.
 
 3) Try it out
    - Register an account, create a collection, search for images (or paste
-     a URL) and save a few, edit their captions, and remove one.
+     a link) and save a few, tag them, edit their captions, and remove one.
    - Click "Share" on a collection to toggle it public (grab the link and
      open it in an incognito window) or invite a second account (register
      a second user first) to collaborate on it.
-   - To see the time-capsule side: when creating a collection, set a
-     "Time-lock until" date a minute or two in the future and/or click
-     "Use my current location" to add a location-lock. Open the collection
-     as a second (collaborator) account -- you'll see a live countdown and/or
-     a "verify my location" prompt instead of the contents. That second
-     account can still add photos and record a voice note (mic icon on a
-     saved item) while locked -- they just won't see what they added until
-     it unlocks. Once it does, a "Play our radio" button appears and plays
-     every voice note back to back.
+   - Paste an Unsplash photo *page* URL (e.g. unsplash.com/photos/...) into
+     the link field, not just a raw image URL -- it resolves through the
+     Unsplash API for the full-res asset and attribution.
 
 Note: since the default database is in-memory, restarting the server
 resets all data. Set MONGODB_URI if you want data to persist.
@@ -89,10 +87,10 @@ FEATURES
 Core
 - Email/password accounts (JWT auth, bcrypt-hashed passwords)
 - Create, rename, and delete collections
-- Search Unsplash and save results into a collection, or paste an image
-  URL directly (works with zero API key configured)
+- Search Unsplash and save results into a collection, or paste a link
+  directly (works with zero API key configured)
 - Edit a saved item's note and remove items from a collection
-- Search/filter within a collection by title or note
+- Search/filter within a collection by title, note, or tag
 - Invite other accounts as collaborators who can add/edit/remove items
 - Public/private toggle per collection with a shareable read-only link
 - Dark / light theme toggle, persisted per browser
@@ -104,24 +102,24 @@ Reliability & UX
   back if the request fails)
 - Infinite-scroll image search results
 - Responsive, Pinterest-style masonry layout
+- One-touch tag chips (wallpaper / reference / profile) on saved items,
+  with a quick filter row to browse a collection by tag
 
-Time-capsule mode (bonus)
-- Time-lock: set a future unlock date on a collection. Until then, only
-  the owner can see its contents -- everyone else sees a live countdown.
-- Location-lock: require a viewer to be within a chosen radius (proven via
-  the browser's Geolocation API) before they can see a collection's
-  contents. Works alongside or instead of the time-lock.
-- Blind uploads: while locked, collaborators can still add photos (and
-  voice notes) to the collection -- they just can't see the collection's
-  contents themselves, not even what they just added, until it unlocks.
-- Voice notes: record a short voice memo (with rotating prompt cards) on
-  any saved item straight from the browser's microphone; no external
-  service, just the standard MediaRecorder API.
-- Radio playback: once a collection unlocks, a "Play our radio" button
-  plays every voice note back to back like a little broadcast.
-- Participation indicator: shows how many members have added something to
-  a locked collection ("3 / 4 sealed") without revealing who or what, so
-  the blind seal isn't spoiled.
+Unsplash integration, hardened (bonus)
+- Thumbnail/full-res split: search results and grid tiles load a small,
+  compressed render (w=400&q=70); the full-resolution asset is only
+  fetched once an image is actually saved, not for every tile
+- Search result caching: identical searches are cached server-side for
+  5 minutes so retyped or repeated queries don't count twice against
+  Unsplash's 50 req/hr free-tier rate limit
+- Smart link resolution (GET /api/resolve-url): pasting an Unsplash photo
+  *page* URL (not just a raw image URL) resolves through the Unsplash API
+  for the real high-res asset and attribution; a direct image link (with
+  or without a file extension) passes through via a Content-Type sniff;
+  any other page has its og:image scraped as a last resort. Blocks
+  loopback/private-network hosts.
+- Photographer attribution: "Photo by X on Unsplash" is stored and shown
+  on every item sourced from Unsplash, per their API usage guidelines.
 
 ------------------------------------------------------------
 REFLECTION (under 100 words)
