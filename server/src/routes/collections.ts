@@ -5,6 +5,7 @@ import { CollectionModel, isCollaborator, idOf, type CollectionDocument } from "
 import { UserModel } from "../models/User";
 import { AppError } from "../utils/AppError";
 import { requireAuth, type AuthedRequest } from "../middleware/auth";
+import { pingUnsplashDownload } from "../utils/unsplash";
 
 export const collectionsRouter = Router();
 
@@ -203,20 +204,25 @@ const addItemSchema = z.object({
   credit: z.string().trim().max(200).optional(),
   creditUrl: urlOrEmpty.optional(),
   tags: z.array(z.string().trim().min(1).max(30)).max(10).optional(),
+  // Unsplash's own "download_location" tracking URL for this photo -- not
+  // stored on the item, just pinged once below per their API guidelines.
+  downloadLocation: urlOrEmpty.optional(),
 });
 
 /**
  * POST /api/collections/:id/items -- requires auth + owner/collaborator access.
- * Body: { imageUrl, thumbUrl, sourceUrl?, title?, note?, credit?, creditUrl?, tags? }.
+ * Body: { imageUrl, thumbUrl, sourceUrl?, title?, note?, credit?, creditUrl?, tags?, downloadLocation? }.
  * Saves an image into the collection.
  */
 collectionsRouter.post("/:id/items", async (req: AuthedRequest, res, next) => {
   try {
     const collection = await loadAccessibleCollection(req.params.id, req.userId!);
-    const data = addItemSchema.parse(req.body);
+    const { downloadLocation, ...data } = addItemSchema.parse(req.body);
 
     collection.items.push({ ...data, addedBy: new Types.ObjectId(req.userId) });
     collection.lastActivity = { by: new Types.ObjectId(req.userId), action: "added an image", at: new Date() };
+
+    if (downloadLocation) await pingUnsplashDownload(downloadLocation);
 
     res.status(201).json({ collection: await saveAndSerialize(collection, req.userId!) });
   } catch (err) {

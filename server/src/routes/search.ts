@@ -18,7 +18,7 @@ interface UnsplashPhoto {
   description: string | null;
   alt_description: string | null;
   urls: { raw: string; full: string; regular: string; small: string };
-  links: { html: string };
+  links: { html: string; download_location: string };
   user: { name: string; links: { html: string } };
 }
 
@@ -103,6 +103,7 @@ searchRouter.get("/", async (req, res, next) => {
         sourceUrl: photo.links.html,
         credit: photo.user.name,
         creditUrl: photo.user.links.html,
+        downloadLocation: photo.links.download_location,
       })),
     };
 

@@ -109,6 +109,7 @@ export function ImageSearchDialog({
         sourceUrl: resolved.data.sourceUrl,
         credit: resolved.data.credit,
         creditUrl: resolved.data.creditUrl,
+        downloadLocation: resolved.data.downloadLocation,
       });
       setPastedUrl("");
       setPasteOpen(false);

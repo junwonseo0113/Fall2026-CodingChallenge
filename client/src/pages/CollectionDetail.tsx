@@ -89,6 +89,7 @@ export function CollectionDetail() {
         title: result.title,
         credit: result.credit,
         creditUrl: result.creditUrl,
+        downloadLocation: result.downloadLocation,
       });
       setCollection(res.data.collection);
       toast.success("Saved to collection");

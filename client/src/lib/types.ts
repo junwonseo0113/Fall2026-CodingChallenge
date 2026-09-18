@@ -40,4 +40,5 @@ export interface SearchResult {
   sourceUrl: string;
   credit: string;
   creditUrl?: string;
+  downloadLocation?: string;
 }
