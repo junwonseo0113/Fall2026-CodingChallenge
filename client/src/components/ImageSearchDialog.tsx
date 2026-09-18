@@ -97,9 +97,23 @@ export function ImageSearchDialog({
     }
     setAddingPasted(true);
     try {
-      await onAdd({ id: pastedUrl, title: "", imageUrl: pastedUrl, thumbUrl: pastedUrl, sourceUrl: pastedUrl, credit: "" });
+      // Resolves the link server-side: an Unsplash photo page becomes its full-res
+      // asset + attribution, a direct image URL passes through, and anything else
+      // gets its og:image scraped -- so pasting a page link works, not just a raw image URL.
+      const resolved = await api.get("/resolve-url", { params: { url: pastedUrl } });
+      await onAdd({
+        id: pastedUrl,
+        title: "",
+        imageUrl: resolved.data.imageUrl,
+        thumbUrl: resolved.data.thumbUrl,
+        sourceUrl: resolved.data.sourceUrl,
+        credit: resolved.data.credit,
+        creditUrl: resolved.data.creditUrl,
+      });
       setPastedUrl("");
       setPasteOpen(false);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, "Couldn't find an image at that URL"));
     } finally {
       setAddingPasted(false);
     }
@@ -132,7 +146,7 @@ export function ImageSearchDialog({
               <Link2 className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--muted-foreground)]" />
               <Input
                 ref={pasteInputRef}
-                placeholder="Paste an image URL..."
+                placeholder="Paste an image or Unsplash link..."
                 className="h-9 pl-8 text-sm"
                 value={pastedUrl}
                 onChange={(e) => setPastedUrl(e.target.value)}
@@ -160,7 +174,7 @@ export function ImageSearchDialog({
             className="mb-4 flex items-center gap-1 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             onClick={() => setPasteOpen(true)}
           >
-            <Link2 className="h-3 w-3" /> Or paste an image URL instead
+            <Link2 className="h-3 w-3" /> Or paste a link instead
           </button>
         )}
 

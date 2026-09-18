@@ -192,6 +192,8 @@ collectionsRouter.delete("/:id", async (req: AuthedRequest, res, next) => {
 
 // --- Items ---
 
+const urlOrEmpty = z.union([z.literal(""), z.string().url()]);
+
 const addItemSchema = z.object({
   imageUrl: z.string().url(),
   thumbUrl: z.string().url(),
@@ -199,7 +201,7 @@ const addItemSchema = z.object({
   title: z.string().trim().max(200).optional(),
   note: z.string().trim().max(1000).optional(),
   credit: z.string().trim().max(200).optional(),
-  creditUrl: z.string().url().optional(),
+  creditUrl: urlOrEmpty.optional(),
   tags: z.array(z.string().trim().min(1).max(30)).max(10).optional(),
 });
 

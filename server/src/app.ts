@@ -5,6 +5,7 @@ import { authRouter } from "./routes/auth";
 import { collectionsRouter } from "./routes/collections";
 import { publicRouter } from "./routes/public";
 import { searchRouter } from "./routes/search";
+import { resolveRouter } from "./routes/resolve";
 import { notFoundHandler, errorHandler } from "./middleware/errorHandler";
 
 export function createApp() {
@@ -19,6 +20,7 @@ export function createApp() {
   app.use("/api/collections", collectionsRouter);
   app.use("/api/public", publicRouter);
   app.use("/api/search", searchRouter);
+  app.use("/api/resolve-url", resolveRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
