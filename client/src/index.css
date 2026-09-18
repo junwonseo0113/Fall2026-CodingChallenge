@@ -2,89 +2,93 @@
 
 @theme {
   --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", monospace;
 }
 
+/* Warm sand + amber by day, deep navy + amber by night -- a "tape deck at
+   sunrise / radio cabinet at night" pairing instead of the previous red. */
+
 :root {
-  --background: #fafafa;
-  --foreground: #18181b;
-  --muted: #f4f4f5;
-  --muted-foreground: #6b7280;
-  --border: #e5e7eb;
-  --card: #ffffff;
-  --primary: #e60023;
-  --primary-hover: #c2001d;
-  --primary-foreground: #ffffff;
-  --ring: #e60023;
-  --gradient-primary: linear-gradient(135deg, #ff3d55 0%, #e60023 55%, #c2001d 100%);
-  --gradient-page: radial-gradient(circle at 15% -10%, rgba(230, 0, 35, 0.06), transparent 45%),
-    radial-gradient(circle at 100% 0%, rgba(255, 122, 60, 0.05), transparent 40%);
-  --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.04), 0 1px 1px rgba(24, 24, 27, 0.03);
-  --shadow-md: 0 4px 16px rgba(24, 24, 27, 0.06), 0 1px 3px rgba(24, 24, 27, 0.04);
-  --shadow-lg: 0 12px 32px rgba(24, 24, 27, 0.1), 0 2px 6px rgba(24, 24, 27, 0.05);
-  --shadow-glow: 0 8px 24px rgba(230, 0, 35, 0.22);
+  --background: #f7f1e6;
+  --foreground: #241d14;
+  --muted: #eee4d2;
+  --muted-foreground: #7a6c56;
+  --border: #e2d4bb;
+  --card: #fffcf5;
+  --primary: #d1791f;
+  --primary-hover: #b5650f;
+  --primary-foreground: #fffaf0;
+  --ring: #d1791f;
+  --gradient-primary: linear-gradient(135deg, #f0a24a 0%, #d1791f 55%, #a85f10 100%);
+  --gradient-page: radial-gradient(circle at 15% -10%, rgba(209, 121, 31, 0.09), transparent 45%),
+    radial-gradient(circle at 100% 0%, rgba(232, 149, 74, 0.07), transparent 40%);
+  --shadow-sm: 0 1px 2px rgba(36, 29, 20, 0.05), 0 1px 1px rgba(36, 29, 20, 0.04);
+  --shadow-md: 0 4px 16px rgba(36, 29, 20, 0.07), 0 1px 3px rgba(36, 29, 20, 0.05);
+  --shadow-lg: 0 12px 32px rgba(36, 29, 20, 0.12), 0 2px 6px rgba(36, 29, 20, 0.06);
+  --shadow-glow: 0 8px 24px rgba(209, 121, 31, 0.25);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0d;
-    --foreground: #f4f4f5;
-    --muted: #1a1a20;
-    --muted-foreground: #9ca3af;
-    --border: #2a2a33;
-    --card: #16161b;
-    --primary: #ff4060;
-    --primary-hover: #ff6580;
-    --primary-foreground: #0a0a0d;
-    --ring: #ff4060;
-    --gradient-primary: linear-gradient(135deg, #ff6580 0%, #ff4060 55%, #e02050 100%);
-    --gradient-page: radial-gradient(circle at 15% -10%, rgba(255, 64, 96, 0.1), transparent 45%),
-      radial-gradient(circle at 100% 0%, rgba(255, 122, 60, 0.06), transparent 40%);
+    --background: #0a0e1a;
+    --foreground: #f2ecdd;
+    --muted: #131a2b;
+    --muted-foreground: #8189a3;
+    --border: #232c47;
+    --card: #131a2b;
+    --primary: #e8954a;
+    --primary-hover: #f4ab63;
+    --primary-foreground: #0a0e1a;
+    --ring: #e8954a;
+    --gradient-primary: linear-gradient(135deg, #f4ab63 0%, #e8954a 55%, #b9713a 100%);
+    --gradient-page: radial-gradient(circle at 15% -10%, rgba(232, 149, 74, 0.14), transparent 45%),
+      radial-gradient(circle at 100% 0%, rgba(120, 90, 200, 0.06), transparent 40%);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.55);
-    --shadow-glow: 0 8px 28px rgba(255, 64, 96, 0.3);
+    --shadow-glow: 0 8px 28px rgba(232, 149, 74, 0.32);
   }
 }
 
 /* Explicit user choice (via the theme toggle) always wins over the OS preference above. */
 :root[data-theme="dark"] {
-  --background: #0a0a0d;
-  --foreground: #f4f4f5;
-  --muted: #1a1a20;
-  --muted-foreground: #9ca3af;
-  --border: #2a2a33;
-  --card: #16161b;
-  --primary: #ff4060;
-  --primary-hover: #ff6580;
-  --primary-foreground: #0a0a0d;
-  --ring: #ff4060;
-  --gradient-primary: linear-gradient(135deg, #ff6580 0%, #ff4060 55%, #e02050 100%);
-  --gradient-page: radial-gradient(circle at 15% -10%, rgba(255, 64, 96, 0.1), transparent 45%),
-    radial-gradient(circle at 100% 0%, rgba(255, 122, 60, 0.06), transparent 40%);
+  --background: #0a0e1a;
+  --foreground: #f2ecdd;
+  --muted: #131a2b;
+  --muted-foreground: #8189a3;
+  --border: #232c47;
+  --card: #131a2b;
+  --primary: #e8954a;
+  --primary-hover: #f4ab63;
+  --primary-foreground: #0a0e1a;
+  --ring: #e8954a;
+  --gradient-primary: linear-gradient(135deg, #f4ab63 0%, #e8954a 55%, #b9713a 100%);
+  --gradient-page: radial-gradient(circle at 15% -10%, rgba(232, 149, 74, 0.14), transparent 45%),
+    radial-gradient(circle at 100% 0%, rgba(120, 90, 200, 0.06), transparent 40%);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.55);
-  --shadow-glow: 0 8px 28px rgba(255, 64, 96, 0.3);
+  --shadow-glow: 0 8px 28px rgba(232, 149, 74, 0.32);
 }
 
 :root[data-theme="light"] {
-  --background: #fafafa;
-  --foreground: #18181b;
-  --muted: #f4f4f5;
-  --muted-foreground: #6b7280;
-  --border: #e5e7eb;
-  --card: #ffffff;
-  --primary: #e60023;
-  --primary-hover: #c2001d;
-  --primary-foreground: #ffffff;
-  --ring: #e60023;
-  --gradient-primary: linear-gradient(135deg, #ff3d55 0%, #e60023 55%, #c2001d 100%);
-  --gradient-page: radial-gradient(circle at 15% -10%, rgba(230, 0, 35, 0.06), transparent 45%),
-    radial-gradient(circle at 100% 0%, rgba(255, 122, 60, 0.05), transparent 40%);
-  --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.04), 0 1px 1px rgba(24, 24, 27, 0.03);
-  --shadow-md: 0 4px 16px rgba(24, 24, 27, 0.06), 0 1px 3px rgba(24, 24, 27, 0.04);
-  --shadow-lg: 0 12px 32px rgba(24, 24, 27, 0.1), 0 2px 6px rgba(24, 24, 27, 0.05);
-  --shadow-glow: 0 8px 24px rgba(230, 0, 35, 0.22);
+  --background: #f7f1e6;
+  --foreground: #241d14;
+  --muted: #eee4d2;
+  --muted-foreground: #7a6c56;
+  --border: #e2d4bb;
+  --card: #fffcf5;
+  --primary: #d1791f;
+  --primary-hover: #b5650f;
+  --primary-foreground: #fffaf0;
+  --ring: #d1791f;
+  --gradient-primary: linear-gradient(135deg, #f0a24a 0%, #d1791f 55%, #a85f10 100%);
+  --gradient-page: radial-gradient(circle at 15% -10%, rgba(209, 121, 31, 0.09), transparent 45%),
+    radial-gradient(circle at 100% 0%, rgba(232, 149, 74, 0.07), transparent 40%);
+  --shadow-sm: 0 1px 2px rgba(36, 29, 20, 0.05), 0 1px 1px rgba(36, 29, 20, 0.04);
+  --shadow-md: 0 4px 16px rgba(36, 29, 20, 0.07), 0 1px 3px rgba(36, 29, 20, 0.05);
+  --shadow-lg: 0 12px 32px rgba(36, 29, 20, 0.12), 0 2px 6px rgba(36, 29, 20, 0.06);
+  --shadow-glow: 0 8px 24px rgba(209, 121, 31, 0.25);
 }
 
 * {

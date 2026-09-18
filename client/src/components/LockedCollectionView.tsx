@@ -36,7 +36,9 @@ export function LockedCollectionView({
 
   return (
     <div className="mt-10 flex flex-col items-center gap-6 rounded-2xl border border-dashed border-[var(--border)] p-16 text-center">
-      <Lock className="h-10 w-10 text-[var(--muted-foreground)]" />
+      <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--muted)] shadow-[var(--shadow-glow)]">
+        <Lock className="h-7 w-7 text-[var(--primary)]" />
+      </span>
       <div>
         <h2 className="text-lg font-semibold">This collection is locked</h2>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
@@ -51,8 +53,12 @@ export function LockedCollectionView({
           { label: "Sec", value: parts.seconds },
         ].map(({ label, value }) => (
           <div key={label} className="min-w-16 rounded-xl bg-[var(--muted)] px-4 py-3">
-            <div className="text-2xl font-semibold tabular-nums">{String(value).padStart(2, "0")}</div>
-            <div className="text-xs text-[var(--muted-foreground)]">{label}</div>
+            <div className="font-mono text-2xl font-semibold tabular-nums text-[var(--primary)]">
+              {String(value).padStart(2, "0")}
+            </div>
+            <div className="mt-0.5 text-[10px] uppercase tracking-wider text-[var(--muted-foreground)]">
+              {label}
+            </div>
           </div>
         ))}
       </div>
