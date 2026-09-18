@@ -143,9 +143,8 @@ Wallpaper preview
 - A "preview as wallpaper" button on every saved item opens a phone-bezel
   mockup (drawn with CSS, no image assets needed) showing that image as a
   lock-screen wallpaper, cropped to the screen's aspect ratio, with a real
-  live clock (updates every second) and today's date overlaid on top --
-  so you can judge how an image would actually look as a wallpaper before
-  committing to it.
+  live clock and today's date overlaid on top -- so you can judge how an
+  image would actually look as a wallpaper before committing to it.
 
 Save to device
 - A download button on every saved item fetches the image and either
@@ -158,11 +157,22 @@ Save to device
 ------------------------------------------------------------
 REFLECTION (under 100 words)
 ------------------------------------------------------------
-[YOUR REFLECTION HERE -- did you learn anything new, reinforce any known
-concepts, run into any issues?]
+I started knowing less than this project probably required. I could
+draw on my FastAPI experience for REST design, but Express, MongoDB,
+and JWT were new to me, and I only understood most of what I built
+after breaking it. A shared route leaked items the interface already
+superficially hid, and Tailwind rules overrode every border until I
+inspected computed styles. Neither was visible from reading code,
+only from actually running it. I finished the project less confident
+in what I knew going in, and more confident in how I find things out.
 
 ------------------------------------------------------------
 FEEDBACK ON THE CHALLENGE
 ------------------------------------------------------------
-[YOUR FEEDBACK HERE -- thoughts on the workshops, office hours, or the
-challenge itself]
+The rubric has two spots where the header and the listed points don't
+match: "Core Features" is headed "up to 3 points" but lists a 5-point
+tier, and "Data Handling" says "up to 5" but maxes out at 3. The ~5
+hour estimate also reads like it's scoped to a baseline version rather
+than one built toward the higher tiers. That said, the open-ended spec
+was the best part of the challenge -- deciding what to build beyond
+the base requirements is what pushed me to actually improve.

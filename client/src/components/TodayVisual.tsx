@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { api, apiErrorMessage } from "@/lib/api";
 import type { Collection, TodayVisual as TodayVisualData } from "@/lib/types";
 import { getCurrentPosition } from "@/lib/geolocation";
+import { unsplashConfigured } from "@/lib/config";
 import { colorPlaceholderStyle } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +32,13 @@ export function TodayVisual({ collections, onSaved }: { collections: Collection[
     let cancelled = false;
 
     async function load() {
+      // No point prompting for geolocation or hitting the API if the server
+      // can't produce a pick anyway -- skip straight to "don't render".
+      if (!(await unsplashConfigured())) {
+        if (!cancelled) setLoading(false);
+        return;
+      }
+
       const hour = new Date().getHours();
       let lat: number | undefined;
       let lon: number | undefined;

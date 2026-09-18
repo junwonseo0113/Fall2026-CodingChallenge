@@ -15,7 +15,10 @@ export function createApp() {
   app.use(cors({ origin: env.clientOrigin }));
   app.use(express.json());
 
-  app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
+  // unsplashConfigured lets the client skip search/today-visual requests entirely
+  // (rather than firing them and showing an error) when no key is set up --
+  // no secret is exposed, just whether one exists.
+  app.get("/api/health", (_req, res) => res.json({ status: "ok", unsplashConfigured: Boolean(env.unsplashAccessKey) }));
 
   app.use("/api/auth", authRouter);
   app.use("/api/collections", collectionsRouter);

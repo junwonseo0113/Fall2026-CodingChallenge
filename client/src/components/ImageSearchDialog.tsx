@@ -2,6 +2,7 @@ import * as React from "react";
 import { Search, Plus, Check, Link2, X as XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { api, apiErrorMessage } from "@/lib/api";
+import { unsplashConfigured } from "@/lib/config";
 import type { SearchResult } from "@/lib/types";
 import { colorPlaceholderStyle } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -39,9 +40,20 @@ export function ImageSearchDialog({
   const [addingPasted, setAddingPasted] = React.useState(false);
   const pasteInputRef = React.useRef<HTMLInputElement | null>(null);
   const sentinelRef = React.useRef<HTMLDivElement | null>(null);
+  // null while checking; false hides the search box entirely and jumps straight
+  // to the paste-link form instead of firing a request that's guaranteed to fail.
+  const [hasUnsplash, setHasUnsplash] = React.useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    unsplashConfigured().then(setHasUnsplash);
+  }, []);
+
+  // Search being unavailable forces the paste form open -- derived directly
+  // rather than synced via an effect, since it's just a function of state.
+  const showPasteForm = pasteOpen || hasUnsplash === false;
 
   const runSearch = React.useCallback(async (q: string, nextPage: number) => {
-    if (!q.trim()) {
+    if (!q.trim() || hasUnsplash === false) {
       setResults([]);
       return;
     }
@@ -55,7 +67,7 @@ export function ImageSearchDialog({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [hasUnsplash]);
 
   // Debounce search-as-you-type.
   React.useEffect(() => {
@@ -123,8 +135,8 @@ export function ImageSearchDialog({
   }
 
   React.useEffect(() => {
-    if (pasteOpen) pasteInputRef.current?.focus();
-  }, [pasteOpen]);
+    if (showPasteForm) pasteInputRef.current?.focus();
+  }, [showPasteForm]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -132,18 +144,24 @@ export function ImageSearchDialog({
         <DialogHeader>
           <DialogTitle>Search images</DialogTitle>
         </DialogHeader>
-        <div className="relative mb-2">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-          <Input
-            autoFocus
-            placeholder="Search Unsplash for photos..."
-            className="pl-9"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
+        {hasUnsplash === false ? (
+          <p className="mb-2 rounded-xl border border-dashed border-[var(--border)] p-3 text-sm text-[var(--muted-foreground)]">
+            Image search isn't configured for this deployment -- paste a link below to add a photo.
+          </p>
+        ) : (
+          <div className="relative mb-2">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+            <Input
+              autoFocus
+              placeholder="Search Unsplash for photos..."
+              className="pl-9"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+        )}
 
-        {pasteOpen ? (
+        {showPasteForm ? (
           <form onSubmit={handleAddPastedUrl} className="mb-4 flex gap-2">
             <div className="relative flex-1">
               <Link2 className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--muted-foreground)]" />
@@ -158,18 +176,20 @@ export function ImageSearchDialog({
             <Button type="submit" size="sm" variant="outline" disabled={!pastedUrl || addingPasted}>
               {addingPasted ? "Adding..." : "Add"}
             </Button>
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className="h-9 w-9 shrink-0"
-              onClick={() => {
-                setPasteOpen(false);
-                setPastedUrl("");
-              }}
-            >
-              <XIcon className="h-4 w-4" />
-            </Button>
+            {hasUnsplash !== false && (
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-9 w-9 shrink-0"
+                onClick={() => {
+                  setPasteOpen(false);
+                  setPastedUrl("");
+                }}
+              >
+                <XIcon className="h-4 w-4" />
+              </Button>
+            )}
           </form>
         ) : (
           <button
