@@ -1,10 +1,12 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Download } from "lucide-react";
 import { toast } from "sonner";
 import { api, apiErrorMessage } from "@/lib/api";
 import { MasonryGrid } from "@/components/MasonryGrid";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Button } from "@/components/ui/button";
+import { saveImageToDevice } from "@/lib/saveToDevice";
 
 interface PublicCollectionData {
   id: string;
@@ -42,6 +44,15 @@ export function PublicCollection() {
     load();
   }, [load]);
 
+  async function handleSaveToDevice(item: PublicCollectionData["items"][number]) {
+    const filename = `${(item.title || "pinboard-image").trim().replace(/[^a-z0-9-_]+/gi, "-")}.jpg`;
+    const result = await saveImageToDevice(item.imageUrl, filename).catch(() => "failed" as const);
+    if (result === "shared") toast.success("Saved via the share sheet");
+    else if (result === "downloaded") toast.success("Download started");
+    else if (result === "opened") toast("Opened in a new tab -- right-click to save it");
+    else if (result === "failed") toast.error("Couldn't save this image");
+  }
+
   return (
     <div>
       <header className="border-b border-[var(--border)]">
@@ -69,8 +80,16 @@ export function PublicCollection() {
             )}
             <MasonryGrid className="mt-6">
               {collection.items.map((item) => (
-                <div key={item.id} className="mb-4 break-inside-avoid overflow-hidden rounded-2xl border border-[var(--border)]">
+                <div key={item.id} className="group relative mb-4 break-inside-avoid overflow-hidden rounded-2xl border border-[var(--border)]">
                   <img src={item.imageUrl} alt={item.title} loading="lazy" className="w-full object-cover" />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="absolute right-2 top-2 h-8 w-8 bg-[var(--card)] opacity-0 transition-opacity group-hover:opacity-100"
+                    onClick={() => handleSaveToDevice(item)}
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </Button>
                   {item.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 px-3 pt-3">
                       {item.tags.map((tag) => (

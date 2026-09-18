@@ -1,8 +1,10 @@
 import * as React from "react";
-import { Pencil, Trash2, ExternalLink, Check, X as XIcon } from "lucide-react";
+import { Pencil, Trash2, ExternalLink, Check, X as XIcon, Download } from "lucide-react";
+import { toast } from "sonner";
 import type { CollectionItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { saveImageToDevice } from "@/lib/saveToDevice";
 
 export const QUICK_TAGS = ["wallpaper", "reference", "profile"] as const;
 
@@ -21,6 +23,7 @@ export function ItemCard({
   const [note, setNote] = React.useState(item.note);
   const [tags, setTags] = React.useState<string[]>(item.tags);
   const [saving, setSaving] = React.useState(false);
+  const [savingToDevice, setSavingToDevice] = React.useState(false);
 
   function toggleTag(tag: string) {
     setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
@@ -36,6 +39,21 @@ export function ItemCard({
     }
   }
 
+  async function handleSaveToDevice() {
+    setSavingToDevice(true);
+    try {
+      const filename = `${(item.title || "pinboard-image").trim().replace(/[^a-z0-9-_]+/gi, "-")}.jpg`;
+      const result = await saveImageToDevice(item.imageUrl, filename);
+      if (result === "shared") toast.success("Saved via the share sheet");
+      else if (result === "downloaded") toast.success("Download started");
+      else if (result === "opened") toast("Opened in a new tab -- right-click to save it");
+    } catch {
+      toast.error("Couldn't save this image");
+    } finally {
+      setSavingToDevice(false);
+    }
+  }
+
   return (
     <div className="group relative mb-4 break-inside-avoid overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-sm)] transition-shadow duration-200 hover:shadow-[var(--shadow-md)]">
       <img
@@ -45,16 +63,27 @@ export function ItemCard({
         className="w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
       />
 
-      {canEdit && (
-        <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-          <Button size="icon" variant="outline" className="h-8 w-8 bg-[var(--card)]" onClick={() => setEditing((v) => !v)}>
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button size="icon" variant="destructive" className="h-8 w-8" onClick={onRemove}>
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      )}
+      <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <Button
+          size="icon"
+          variant="outline"
+          className="h-8 w-8 bg-[var(--card)]"
+          disabled={savingToDevice}
+          onClick={handleSaveToDevice}
+        >
+          <Download className="h-3.5 w-3.5" />
+        </Button>
+        {canEdit && (
+          <>
+            <Button size="icon" variant="outline" className="h-8 w-8 bg-[var(--card)]" onClick={() => setEditing((v) => !v)}>
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            <Button size="icon" variant="destructive" className="h-8 w-8" onClick={onRemove}>
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </>
+        )}
+      </div>
 
       {item.sourceUrl && (
         <a
