@@ -75,6 +75,8 @@ export function CollectionDetail() {
       sourceUrl: result.sourceUrl,
       title: result.title,
       note: "",
+      audioData: null,
+      audioDuration: null,
       addedBy: user,
       createdAt: new Date().toISOString(),
     };
@@ -101,6 +103,19 @@ export function CollectionDetail() {
       setCollection(res.data.collection);
     } catch (err) {
       toast.error(apiErrorMessage(err, "Failed to update item"));
+    }
+  }
+
+  async function handleAttachVoice(itemId: string, audioData: string, durationSeconds: number) {
+    try {
+      const res = await api.post(`/collections/${id}/items/${itemId}/voice`, {
+        audioData,
+        audioDuration: durationSeconds,
+      });
+      setCollection(res.data.collection);
+      toast.success("Voice note saved");
+    } catch (err) {
+      toast.error(apiErrorMessage(err, "Failed to save voice note"));
     }
   }
 
@@ -242,6 +257,7 @@ export function CollectionDetail() {
                     canEdit={canEdit}
                     onEdit={(note) => handleEditItem(item.id, note)}
                     onRemove={() => handleRemoveItem(item.id)}
+                    onAttachVoice={(audioData, duration) => handleAttachVoice(item.id, audioData, duration)}
                   />
                 ))}
               </MasonryGrid>

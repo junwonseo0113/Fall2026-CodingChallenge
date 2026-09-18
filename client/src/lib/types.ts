@@ -11,6 +11,8 @@ export interface CollectionItem {
   sourceUrl?: string;
   title: string;
   note: string;
+  audioData: string | null;
+  audioDuration: number | null;
   addedBy: User | null;
   createdAt: string;
 }
