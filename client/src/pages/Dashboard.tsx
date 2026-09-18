@@ -7,7 +7,6 @@ import { useAuth } from "@/context/AuthContext";
 import { Navbar } from "@/components/Navbar";
 import { CollectionCard } from "@/components/CollectionCard";
 import { CreateCollectionDialog } from "@/components/CreateCollectionDialog";
-import type { LocationLockValue } from "@/components/LocationLockField";
 
 export function Dashboard() {
   const { user } = useAuth();
@@ -26,21 +25,9 @@ export function Dashboard() {
     loadCollections();
   }, [loadCollections]);
 
-  async function handleCreate(
-    name: string,
-    description: string,
-    unlockAt: string,
-    location: LocationLockValue
-  ) {
+  async function handleCreate(name: string, description: string) {
     try {
-      await api.post("/collections", {
-        name,
-        description,
-        unlockAt: unlockAt ? new Date(unlockAt).toISOString() : undefined,
-        unlockLat: location.lat ?? undefined,
-        unlockLng: location.lng ?? undefined,
-        unlockRadiusMeters: location.radiusMeters ?? undefined,
-      });
+      await api.post("/collections", { name, description });
       toast.success("Collection created");
       loadCollections();
     } catch (err) {

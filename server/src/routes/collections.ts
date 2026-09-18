@@ -1,17 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { Types } from "mongoose";
-import {
-  CollectionModel,
-  isCollaborator,
-  isTimeLocked,
-  hasGeoLock,
-  isGeoVerified,
-  isLockedForViewer,
-  distanceMeters,
-  idOf,
-  type CollectionDocument,
-} from "../models/Collection";
+import { CollectionModel, isCollaborator, idOf, type CollectionDocument } from "../models/Collection";
 import { UserModel } from "../models/User";
 import { AppError } from "../utils/AppError";
 import { requireAuth, type AuthedRequest } from "../middleware/auth";
@@ -71,30 +61,7 @@ async function saveAndSerialize(collection: CollectionDocument, viewerId: string
   return serialize(collection, viewerId);
 }
 
-/** Throws if the collection is locked (by time or location) and the requester isn't the owner. */
-function guardUnlocked(collection: CollectionDocument, userId: string) {
-  if (isLockedForViewer(collection, userId)) {
-    throw new AppError(403, "This collection is locked");
-  }
-}
-
-/** Serializes for a specific viewer -- hides item contents while the
- * collection is locked (by time and/or location), unless the viewer is the owner. */
 function serialize(collection: CollectionDocument, viewerId: string) {
-  const isOwnerViewer = idOf(collection.owner) === viewerId;
-  const lockedForViewer = isLockedForViewer(collection, viewerId);
-
-  // A count only, never who -- revealing identities here would spoil the
-  // "blind" seal even though the item contents themselves stay hidden below.
-  const memberIds = new Set(
-    [idOf(collection.owner), ...collection.collaborators.map((c) => idOf(c))].filter(
-      (v): v is string => !!v
-    )
-  );
-  const sealedMemberIds = new Set(
-    collection.items.map((item) => idOf(item.addedBy)).filter((v): v is string => !!v)
-  );
-
   return {
     id: collection.id,
     name: collection.name,
@@ -103,36 +70,22 @@ function serialize(collection: CollectionDocument, viewerId: string) {
     collaborators: collection.collaborators.map(toUserSummary).filter(Boolean),
     isPublic: collection.isPublic,
     shareSlug: collection.shareSlug,
-    unlockAt: collection.unlockAt,
-    isLocked: lockedForViewer,
-    lockedByTime: !isOwnerViewer && isTimeLocked(collection),
-    lockedByLocation: !isOwnerViewer && hasGeoLock(collection) && !isGeoVerified(collection, viewerId),
-    hasGeoLock: hasGeoLock(collection),
-    unlockRadiusMeters: collection.unlockRadiusMeters,
-    // Exact target coordinates only go to the owner -- everyone else just proves
-    // their own position server-side via POST /:id/verify-location.
-    unlockLat: isOwnerViewer ? collection.unlockLat : null,
-    unlockLng: isOwnerViewer ? collection.unlockLng : null,
-    participation: { sealed: sealedMemberIds.size, total: memberIds.size },
-    // Hidden while locked too -- it would otherwise spoil what's inside before the reveal.
-    lastActivity:
-      !lockedForViewer && collection.lastActivity?.at
-        ? { by: toUserSummary(collection.lastActivity.by), action: collection.lastActivity.action, at: collection.lastActivity.at }
-        : undefined,
-    items: lockedForViewer
-      ? []
-      : collection.items.map((item) => ({
-          id: item._id.toString(),
-          imageUrl: item.imageUrl,
-          thumbUrl: item.thumbUrl,
-          sourceUrl: item.sourceUrl,
-          title: item.title,
-          note: item.note,
-          audioData: item.audioData,
-          audioDuration: item.audioDuration,
-          addedBy: toUserSummary(item.addedBy),
-          createdAt: (item as unknown as { createdAt: Date }).createdAt,
-        })),
+    lastActivity: collection.lastActivity?.at
+      ? { by: toUserSummary(collection.lastActivity.by), action: collection.lastActivity.action, at: collection.lastActivity.at }
+      : undefined,
+    items: collection.items.map((item) => ({
+      id: item._id.toString(),
+      imageUrl: item.imageUrl,
+      thumbUrl: item.thumbUrl,
+      sourceUrl: item.sourceUrl,
+      title: item.title,
+      note: item.note,
+      credit: item.credit,
+      creditUrl: item.creditUrl,
+      tags: item.tags,
+      addedBy: toUserSummary(item.addedBy),
+      createdAt: (item as unknown as { createdAt: Date }).createdAt,
+    })),
     createdAt: collection.createdAt,
     updatedAt: collection.updatedAt,
   };
@@ -155,49 +108,25 @@ collectionsRouter.get("/", async (req: AuthedRequest, res, next) => {
   }
 });
 
-/** Either all three geo-lock fields are provided together, or none are. */
-function geoLockFieldsAreConsistent(data: {
-  unlockLat?: number | null;
-  unlockLng?: number | null;
-  unlockRadiusMeters?: number | null;
-}) {
-  const provided = [data.unlockLat, data.unlockLng, data.unlockRadiusMeters].filter(
-    (v) => v !== undefined && v !== null
-  );
-  return provided.length === 0 || provided.length === 3;
-}
-
-const createCollectionSchema = z
-  .object({
-    name: z.string().trim().min(1, "Name is required"),
-    description: z.string().trim().max(500).optional(),
-    unlockAt: z.coerce.date().optional(),
-    unlockLat: z.number().min(-90).max(90).optional(),
-    unlockLng: z.number().min(-180).max(180).optional(),
-    unlockRadiusMeters: z.number().positive().optional(),
-  })
-  .refine(geoLockFieldsAreConsistent, { message: "Provide lat, lng, and radius together" });
+const createCollectionSchema = z.object({
+  name: z.string().trim().min(1, "Name is required"),
+  description: z.string().trim().max(500).optional(),
+});
 
 /**
  * POST /api/collections -- requires auth.
- * Body: { name, description?, unlockAt?, unlockLat?, unlockLng?, unlockRadiusMeters? }.
- * Creates a collection owned by the current user. If unlockAt is a future date
- * and/or a location is set, the collection starts locked for everyone but the owner.
+ * Body: { name, description? }.
+ * Creates a collection owned by the current user.
  */
 collectionsRouter.post("/", async (req: AuthedRequest, res, next) => {
   try {
-    const { name, description, unlockAt, unlockLat, unlockLng, unlockRadiusMeters } =
-      createCollectionSchema.parse(req.body);
+    const { name, description } = createCollectionSchema.parse(req.body);
     const collection = await CollectionModel.create({
       name,
       description: description ?? "",
       owner: req.userId,
       collaborators: [],
       items: [],
-      unlockAt: unlockAt ?? null,
-      unlockLat: unlockLat ?? null,
-      unlockLng: unlockLng ?? null,
-      unlockRadiusMeters: unlockRadiusMeters ?? null,
     });
     await collection.populate(COLLECTION_POPULATE);
     res.status(201).json({ collection: serialize(collection, req.userId!) });
@@ -219,24 +148,16 @@ collectionsRouter.get("/:id", async (req: AuthedRequest, res, next) => {
   }
 });
 
-const updateCollectionSchema = z
-  .object({
-    name: z.string().trim().min(1).optional(),
-    description: z.string().trim().max(500).optional(),
-    isPublic: z.boolean().optional(),
-    unlockAt: z.coerce.date().nullable().optional(),
-    unlockLat: z.number().min(-90).max(90).nullable().optional(),
-    unlockLng: z.number().min(-180).max(180).nullable().optional(),
-    unlockRadiusMeters: z.number().positive().nullable().optional(),
-  })
-  .refine(geoLockFieldsAreConsistent, { message: "Provide lat, lng, and radius together" });
+const updateCollectionSchema = z.object({
+  name: z.string().trim().min(1).optional(),
+  description: z.string().trim().max(500).optional(),
+  isPublic: z.boolean().optional(),
+});
 
 /**
  * PATCH /api/collections/:id -- requires auth + ownership.
- * Body: { name?, description?, isPublic?, unlockAt?, unlockLat?, unlockLng?, unlockRadiusMeters? }.
- * Updates collection settings, including the public/private share toggle and
- * the time-lock/location-lock (pass unlockAt/unlockLat/unlockLng/unlockRadiusMeters
- * as null to clear the corresponding lock).
+ * Body: { name?, description?, isPublic? }.
+ * Updates collection settings, including the public/private share toggle.
  */
 collectionsRouter.patch("/:id", async (req: AuthedRequest, res, next) => {
   try {
@@ -246,44 +167,6 @@ collectionsRouter.patch("/:id", async (req: AuthedRequest, res, next) => {
     }
     const updates = updateCollectionSchema.parse(req.body);
     Object.assign(collection, updates);
-    res.json({ collection: await saveAndSerialize(collection, req.userId!) });
-  } catch (err) {
-    next(err);
-  }
-});
-
-const verifyLocationSchema = z.object({
-  lat: z.number().min(-90).max(90),
-  lng: z.number().min(-180).max(180),
-});
-
-/**
- * POST /api/collections/:id/verify-location -- requires auth + owner/collaborator access.
- * Body: { lat, lng } from the browser's Geolocation API.
- * If within unlockRadiusMeters of the collection's target point, marks this
- * user as geo-verified (persists) and returns the now-unlocked collection.
- * Otherwise 403s with how far off they were.
- */
-collectionsRouter.post("/:id/verify-location", async (req: AuthedRequest, res, next) => {
-  try {
-    const collection = await loadAccessibleCollection(req.params.id, req.userId!);
-    if (!hasGeoLock(collection)) {
-      throw new AppError(400, "This collection doesn't have a location lock");
-    }
-
-    const { lat, lng } = verifyLocationSchema.parse(req.body);
-    const distance = distanceMeters(lat, lng, collection.unlockLat!, collection.unlockLng!);
-
-    if (distance > collection.unlockRadiusMeters!) {
-      throw new AppError(
-        403,
-        `You're about ${Math.round(distance)}m away -- you need to be within ${collection.unlockRadiusMeters}m`
-      );
-    }
-
-    if (!isGeoVerified(collection, req.userId!)) {
-      collection.geoVerifiedUsers.push(new Types.ObjectId(req.userId));
-    }
     res.json({ collection: await saveAndSerialize(collection, req.userId!) });
   } catch (err) {
     next(err);
@@ -315,14 +198,15 @@ const addItemSchema = z.object({
   sourceUrl: z.string().url().optional(),
   title: z.string().trim().max(200).optional(),
   note: z.string().trim().max(1000).optional(),
+  credit: z.string().trim().max(200).optional(),
+  creditUrl: z.string().url().optional(),
+  tags: z.array(z.string().trim().min(1).max(30)).max(10).optional(),
 });
 
 /**
  * POST /api/collections/:id/items -- requires auth + owner/collaborator access.
- * Body: { imageUrl, thumbUrl, sourceUrl?, title?, note? }.
- * Saves an image into the collection. Allowed even while time-locked -- this
- * is the "blind upload": collaborators can contribute, but the item list
- * (including their own upload) stays hidden from them until it unlocks.
+ * Body: { imageUrl, thumbUrl, sourceUrl?, title?, note?, credit?, creditUrl?, tags? }.
+ * Saves an image into the collection.
  */
 collectionsRouter.post("/:id/items", async (req: AuthedRequest, res, next) => {
   try {
@@ -338,48 +222,20 @@ collectionsRouter.post("/:id/items", async (req: AuthedRequest, res, next) => {
   }
 });
 
-const attachVoiceSchema = z.object({
-  audioData: z.string().min(1).max(2_000_000), // base64 data URL, ~2MB cap
-  audioDuration: z.number().positive().max(60),
-});
-
-/**
- * POST /api/collections/:id/items/:itemId/voice -- requires auth + owner/collaborator access.
- * Body: { audioData, audioDuration }.
- * Attaches a voice memo to an item. Allowed even while time-locked, same as
- * adding items -- part of the "blind" seal, not an edit to a sealed item.
- */
-collectionsRouter.post("/:id/items/:itemId/voice", async (req: AuthedRequest, res, next) => {
-  try {
-    const collection = await loadAccessibleCollection(req.params.id, req.userId!);
-    const item = collection.items.id(pathParam(req.params.itemId));
-    if (!item) throw new AppError(404, "Item not found");
-
-    const { audioData, audioDuration } = attachVoiceSchema.parse(req.body);
-    item.audioData = audioData;
-    item.audioDuration = audioDuration;
-    collection.lastActivity = { by: new Types.ObjectId(req.userId), action: "recorded a voice note", at: new Date() };
-
-    res.json({ collection: await saveAndSerialize(collection, req.userId!) });
-  } catch (err) {
-    next(err);
-  }
-});
-
 const editItemSchema = z.object({
   title: z.string().trim().max(200).optional(),
   note: z.string().trim().max(1000).optional(),
+  tags: z.array(z.string().trim().min(1).max(30)).max(10).optional(),
 });
 
 /**
  * PATCH /api/collections/:id/items/:itemId -- requires auth + owner/collaborator access.
- * Body: { title?, note? }.
- * Edits a saved item's caption/note.
+ * Body: { title?, note?, tags? }.
+ * Edits a saved item's caption/note/tags.
  */
 collectionsRouter.patch("/:id/items/:itemId", async (req: AuthedRequest, res, next) => {
   try {
     const collection = await loadAccessibleCollection(req.params.id, req.userId!);
-    guardUnlocked(collection, req.userId!);
     const item = collection.items.id(pathParam(req.params.itemId));
     if (!item) throw new AppError(404, "Item not found");
 
@@ -400,7 +256,6 @@ collectionsRouter.patch("/:id/items/:itemId", async (req: AuthedRequest, res, ne
 collectionsRouter.delete("/:id/items/:itemId", async (req: AuthedRequest, res, next) => {
   try {
     const collection = await loadAccessibleCollection(req.params.id, req.userId!);
-    guardUnlocked(collection, req.userId!);
     const item = collection.items.id(pathParam(req.params.itemId));
     if (!item) throw new AppError(404, "Item not found");
 

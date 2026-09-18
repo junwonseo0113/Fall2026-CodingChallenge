@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { LocationLockField, type LocationLockValue } from "@/components/LocationLockField";
 import {
   Dialog,
   DialogContent,
@@ -13,29 +12,23 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-const EMPTY_LOCATION: LocationLockValue = { lat: null, lng: null, radiusMeters: null };
-
 export function CreateCollectionDialog({
   onCreate,
 }: {
-  onCreate: (name: string, description: string, unlockAt: string, location: LocationLockValue) => Promise<void>;
+  onCreate: (name: string, description: string) => Promise<void>;
 }) {
   const [open, setOpen] = React.useState(false);
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
-  const [unlockAt, setUnlockAt] = React.useState("");
-  const [location, setLocation] = React.useState<LocationLockValue>(EMPTY_LOCATION);
   const [submitting, setSubmitting] = React.useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await onCreate(name, description, unlockAt, location);
+      await onCreate(name, description);
       setName("");
       setDescription("");
-      setUnlockAt("");
-      setLocation(EMPTY_LOCATION);
       setOpen(false);
     } finally {
       setSubmitting(false);
@@ -75,19 +68,6 @@ export function CreateCollectionDialog({
               placeholder="What's this board about?"
             />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="collection-unlock">Time-lock until (optional)</Label>
-            <Input
-              id="collection-unlock"
-              type="datetime-local"
-              value={unlockAt}
-              onChange={(e) => setUnlockAt(e.target.value)}
-            />
-            <p className="text-xs text-[var(--muted-foreground)]">
-              Others can add photos blindly until then, but only you can see what's inside.
-            </p>
-          </div>
-          <LocationLockField value={location} onChange={setLocation} />
           <Button type="submit" className="w-full" disabled={submitting}>
             {submitting ? "Creating..." : "Create collection"}
           </Button>

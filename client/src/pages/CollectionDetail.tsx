@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, ImagePlus, Play, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, ImagePlus, Search, Trash2 } from "lucide-react";
 import { api, apiErrorMessage } from "@/lib/api";
 import type { Collection, SearchResult } from "@/lib/types";
 import { relativeTime } from "@/lib/relativeTime";
@@ -11,15 +11,10 @@ import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MasonryGrid } from "@/components/MasonryGrid";
-import { ItemCard } from "@/components/ItemCard";
+import { ItemCard, QUICK_TAGS } from "@/components/ItemCard";
 import { ImageSearchDialog } from "@/components/ImageSearchDialog";
 import { ShareDialog } from "@/components/ShareDialog";
 import { EditCollectionDialog } from "@/components/EditCollectionDialog";
-import { LockedCollectionView } from "@/components/LockedCollectionView";
-import { GeoUnlockPrompt } from "@/components/GeoUnlockPrompt";
-import { CollectionLockBanners } from "@/components/CollectionLockBanners";
-import { RadioPlayer } from "@/components/RadioPlayer";
-import type { LocationLockValue } from "@/components/LocationLockField";
 
 export function CollectionDetail() {
   const { id } = useParams<{ id: string }>();
@@ -27,8 +22,8 @@ export function CollectionDetail() {
   const navigate = useNavigate();
   const [collection, setCollection] = React.useState<Collection | null>(null);
   const [searchOpen, setSearchOpen] = React.useState(false);
-  const [radioOpen, setRadioOpen] = React.useState(false);
   const [filterQuery, setFilterQuery] = React.useState("");
+  const [activeTag, setActiveTag] = React.useState<string | null>(null);
 
   const load = React.useCallback(async () => {
     try {
@@ -60,15 +55,14 @@ export function CollectionDetail() {
     isOwner || collection.collaborators.some((c) => c.id === user?.id);
 
   const normalizedFilter = filterQuery.trim().toLowerCase();
-  const filteredItems = normalizedFilter
-    ? collection.items.filter(
-        (item) =>
-          item.title.toLowerCase().includes(normalizedFilter) ||
-          item.note.toLowerCase().includes(normalizedFilter)
-      )
-    : collection.items;
-
-  const itemsWithAudio = collection.items.filter((item) => item.audioData);
+  const filteredItems = collection.items.filter((item) => {
+    const matchesText =
+      !normalizedFilter ||
+      item.title.toLowerCase().includes(normalizedFilter) ||
+      item.note.toLowerCase().includes(normalizedFilter);
+    const matchesTag = !activeTag || item.tags.includes(activeTag);
+    return matchesText && matchesTag;
+  });
 
   async function handleAddFromSearch(result: SearchResult) {
     // Optimistic update: show the item immediately, roll back if the request fails.
@@ -79,8 +73,9 @@ export function CollectionDetail() {
       sourceUrl: result.sourceUrl,
       title: result.title,
       note: "",
-      audioData: null,
-      audioDuration: null,
+      credit: result.credit,
+      creditUrl: result.creditUrl ?? "",
+      tags: [],
       addedBy: user,
       createdAt: new Date().toISOString(),
     };
@@ -92,6 +87,8 @@ export function CollectionDetail() {
         thumbUrl: result.thumbUrl,
         sourceUrl: result.sourceUrl,
         title: result.title,
+        credit: result.credit,
+        creditUrl: result.creditUrl,
       });
       setCollection(res.data.collection);
       toast.success("Saved to collection");
@@ -101,25 +98,12 @@ export function CollectionDetail() {
     }
   }
 
-  async function handleEditItem(itemId: string, note: string) {
+  async function handleEditItem(itemId: string, note: string, tags: string[]) {
     try {
-      const res = await api.patch(`/collections/${id}/items/${itemId}`, { note });
+      const res = await api.patch(`/collections/${id}/items/${itemId}`, { note, tags });
       setCollection(res.data.collection);
     } catch (err) {
       toast.error(apiErrorMessage(err, "Failed to update item"));
-    }
-  }
-
-  async function handleAttachVoice(itemId: string, audioData: string, durationSeconds: number) {
-    try {
-      const res = await api.post(`/collections/${id}/items/${itemId}/voice`, {
-        audioData,
-        audioDuration: durationSeconds,
-      });
-      setCollection(res.data.collection);
-      toast.success("Voice note saved");
-    } catch (err) {
-      toast.error(apiErrorMessage(err, "Failed to save voice note"));
     }
   }
 
@@ -134,21 +118,9 @@ export function CollectionDetail() {
     }
   }
 
-  async function handleUpdateDetails(
-    name: string,
-    description: string,
-    unlockAt: string,
-    location: LocationLockValue
-  ) {
+  async function handleUpdateDetails(name: string, description: string) {
     try {
-      const res = await api.patch(`/collections/${id}`, {
-        name,
-        description,
-        unlockAt: unlockAt ? new Date(unlockAt).toISOString() : null,
-        unlockLat: location.lat,
-        unlockLng: location.lng,
-        unlockRadiusMeters: location.radiusMeters,
-      });
+      const res = await api.patch(`/collections/${id}`, { name, description });
       setCollection(res.data.collection);
       toast.success("Collection updated");
     } catch (err) {
@@ -194,16 +166,9 @@ export function CollectionDetail() {
                 </>
               )}
             </p>
-            <CollectionLockBanners collection={collection} isOwner={isOwner} canEdit={canEdit} />
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {!collection.isLocked && itemsWithAudio.length > 0 && (
-              <Button onClick={() => setRadioOpen(true)}>
-                <Play className="h-4 w-4" />
-                Play our radio
-              </Button>
-            )}
             {canEdit && (
               <Button onClick={() => setSearchOpen(true)}>
                 <ImagePlus className="h-4 w-4" />
@@ -220,25 +185,7 @@ export function CollectionDetail() {
           </div>
         </div>
 
-        {collection.isLocked ? (
-          <div className="flex flex-col gap-6">
-            {collection.lockedByTime && (
-              <LockedCollectionView
-                unlockAt={collection.unlockAt!}
-                participation={collection.participation}
-                onUnlocked={load}
-              />
-            )}
-            {collection.lockedByLocation && (
-              <GeoUnlockPrompt
-                collectionId={id!}
-                radiusMeters={collection.unlockRadiusMeters}
-                participation={collection.participation}
-                onVerified={load}
-              />
-            )}
-          </div>
-        ) : collection.items.length === 0 ? (
+        {collection.items.length === 0 ? (
           <div className="mt-10 rounded-2xl border border-dashed border-[var(--border)] p-12 text-center text-[var(--muted-foreground)]">
             No images saved yet.{" "}
             {canEdit && (
@@ -249,19 +196,37 @@ export function CollectionDetail() {
           </div>
         ) : (
           <>
-            <div className="relative mt-4 max-w-xs">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-              <Input
-                placeholder="Filter by title or note..."
-                className="pl-9"
-                value={filterQuery}
-                onChange={(e) => setFilterQuery(e.target.value)}
-              />
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <div className="relative max-w-xs flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                <Input
+                  placeholder="Filter by title or note..."
+                  className="pl-9"
+                  value={filterQuery}
+                  onChange={(e) => setFilterQuery(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {QUICK_TAGS.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setActiveTag((prev) => (prev === tag ? null : tag))}
+                    className={`rounded-full border px-2.5 py-1 text-xs font-medium capitalize transition-colors ${
+                      activeTag === tag
+                        ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
+                        : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)]"
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {filteredItems.length === 0 ? (
               <p className="mt-8 text-center text-[var(--muted-foreground)]">
-                No saved images match "{filterQuery}".
+                No saved images match your filters.
               </p>
             ) : (
               <MasonryGrid className="mt-6">
@@ -270,9 +235,8 @@ export function CollectionDetail() {
                     key={item.id}
                     item={item}
                     canEdit={canEdit}
-                    onEdit={(note) => handleEditItem(item.id, note)}
+                    onEdit={(note, tags) => handleEditItem(item.id, note, tags)}
                     onRemove={() => handleRemoveItem(item.id)}
-                    onAttachVoice={(audioData, duration) => handleAttachVoice(item.id, audioData, duration)}
                   />
                 ))}
               </MasonryGrid>
@@ -287,8 +251,6 @@ export function CollectionDetail() {
         onAdd={handleAddFromSearch}
         savedImageUrls={new Set(collection.items.map((i) => i.imageUrl))}
       />
-
-      <RadioPlayer open={radioOpen} onOpenChange={setRadioOpen} items={itemsWithAudio} />
     </div>
   );
 }

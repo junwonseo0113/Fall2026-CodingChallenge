@@ -11,8 +11,9 @@ export interface CollectionItem {
   sourceUrl?: string;
   title: string;
   note: string;
-  audioData: string | null;
-  audioDuration: number | null;
+  credit: string;
+  creditUrl: string;
+  tags: string[];
   addedBy: User | null;
   createdAt: string;
 }
@@ -27,15 +28,6 @@ export interface Collection {
   shareSlug: string;
   items: CollectionItem[];
   lastActivity?: { by: User | null; action: string; at: string };
-  unlockAt: string | null;
-  isLocked: boolean;
-  lockedByTime: boolean;
-  lockedByLocation: boolean;
-  hasGeoLock: boolean;
-  unlockLat: number | null;
-  unlockLng: number | null;
-  unlockRadiusMeters: number | null;
-  participation: { sealed: number; total: number };
   createdAt: string;
   updatedAt: string;
 }
@@ -47,4 +39,5 @@ export interface SearchResult {
   thumbUrl: string;
   sourceUrl: string;
   credit: string;
+  creditUrl?: string;
 }
