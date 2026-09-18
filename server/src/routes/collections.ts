@@ -84,6 +84,17 @@ function serialize(collection: CollectionDocument, viewerId: string) {
   const isOwnerViewer = idOf(collection.owner) === viewerId;
   const lockedForViewer = isLockedForViewer(collection, viewerId);
 
+  // A count only, never who -- revealing identities here would spoil the
+  // "blind" seal even though the item contents themselves stay hidden below.
+  const memberIds = new Set(
+    [idOf(collection.owner), ...collection.collaborators.map((c) => idOf(c))].filter(
+      (v): v is string => !!v
+    )
+  );
+  const sealedMemberIds = new Set(
+    collection.items.map((item) => idOf(item.addedBy)).filter((v): v is string => !!v)
+  );
+
   return {
     id: collection.id,
     name: collection.name,
@@ -102,6 +113,7 @@ function serialize(collection: CollectionDocument, viewerId: string) {
     // their own position server-side via POST /:id/verify-location.
     unlockLat: isOwnerViewer ? collection.unlockLat : null,
     unlockLng: isOwnerViewer ? collection.unlockLng : null,
+    participation: { sealed: sealedMemberIds.size, total: memberIds.size },
     // Hidden while locked too -- it would otherwise spoil what's inside before the reveal.
     lastActivity:
       !lockedForViewer && collection.lastActivity?.at
