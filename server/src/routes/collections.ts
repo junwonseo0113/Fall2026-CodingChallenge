@@ -116,6 +116,8 @@ function serialize(collection: CollectionDocument, viewerId: string) {
           sourceUrl: item.sourceUrl,
           title: item.title,
           note: item.note,
+          audioData: item.audioData,
+          audioDuration: item.audioDuration,
           addedBy: toUserSummary(item.addedBy),
           createdAt: (item as unknown as { createdAt: Date }).createdAt,
         })),
@@ -319,6 +321,34 @@ collectionsRouter.post("/:id/items", async (req: AuthedRequest, res, next) => {
     collection.lastActivity = { by: new Types.ObjectId(req.userId), action: "added an image", at: new Date() };
 
     res.status(201).json({ collection: await saveAndSerialize(collection, req.userId!) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const attachVoiceSchema = z.object({
+  audioData: z.string().min(1).max(2_000_000), // base64 data URL, ~2MB cap
+  audioDuration: z.number().positive().max(60),
+});
+
+/**
+ * POST /api/collections/:id/items/:itemId/voice -- requires auth + owner/collaborator access.
+ * Body: { audioData, audioDuration }.
+ * Attaches a voice memo to an item. Allowed even while time-locked, same as
+ * adding items -- part of the "blind" seal, not an edit to a sealed item.
+ */
+collectionsRouter.post("/:id/items/:itemId/voice", async (req: AuthedRequest, res, next) => {
+  try {
+    const collection = await loadAccessibleCollection(req.params.id, req.userId!);
+    const item = collection.items.id(pathParam(req.params.itemId));
+    if (!item) throw new AppError(404, "Item not found");
+
+    const { audioData, audioDuration } = attachVoiceSchema.parse(req.body);
+    item.audioData = audioData;
+    item.audioDuration = audioDuration;
+    collection.lastActivity = { by: new Types.ObjectId(req.userId), action: "recorded a voice note", at: new Date() };
+
+    res.json({ collection: await saveAndSerialize(collection, req.userId!) });
   } catch (err) {
     next(err);
   }

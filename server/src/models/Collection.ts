@@ -9,6 +9,10 @@ const itemSchema = new Schema(
     title: { type: String, default: "" },
     note: { type: String, default: "" }, // user-editable caption/note
     addedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    // A short voice memo attached to this item, stored as a base64 data URL
+    // (e.g. "data:audio/webm;base64,..."). Optional -- most items won't have one.
+    audioData: { type: String, default: null },
+    audioDuration: { type: Number, default: null }, // seconds
   },
   { timestamps: true }
 );
