@@ -223,12 +223,17 @@ export function CollectionDetail() {
         {collection.isLocked ? (
           <div className="flex flex-col gap-6">
             {collection.lockedByTime && (
-              <LockedCollectionView unlockAt={collection.unlockAt!} onUnlocked={load} />
+              <LockedCollectionView
+                unlockAt={collection.unlockAt!}
+                participation={collection.participation}
+                onUnlocked={load}
+              />
             )}
             {collection.lockedByLocation && (
               <GeoUnlockPrompt
                 collectionId={id!}
                 radiusMeters={collection.unlockRadiusMeters}
+                participation={collection.participation}
                 onVerified={load}
               />
             )}

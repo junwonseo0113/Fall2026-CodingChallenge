@@ -1,4 +1,4 @@
-import { MapPin, Timer } from "lucide-react";
+import { MapPin, Timer, Users } from "lucide-react";
 import type { Collection } from "@/lib/types";
 
 /** The small status lines under a collection's title explaining its lock state to the owner/editors. */
@@ -33,6 +33,15 @@ export function CollectionLockBanners({
           Requires unlocking within {collection.unlockRadiusMeters}m of the target location
         </p>
       )}
+      {isOwner &&
+        (collection.unlockAt || collection.hasGeoLock) &&
+        collection.participation.total > 1 && (
+          <p className="mt-1 flex items-center gap-1 text-xs font-medium text-[var(--muted-foreground)]">
+            <Users className="h-3.5 w-3.5" />
+            {collection.participation.sealed} / {collection.participation.total} members have sealed their
+            contribution
+          </p>
+        )}
     </>
   );
 }

@@ -35,6 +35,7 @@ export interface Collection {
   unlockLat: number | null;
   unlockLng: number | null;
   unlockRadiusMeters: number | null;
+  participation: { sealed: number; total: number };
   createdAt: string;
   updatedAt: string;
 }

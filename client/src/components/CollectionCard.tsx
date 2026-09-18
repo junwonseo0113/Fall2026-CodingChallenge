@@ -19,6 +19,11 @@ export function CollectionCard({ collection, isOwner }: { collection: Collection
                 : collection.lockedByLocation
                 ? "Locked -- requires location"
                 : "Locked"}
+              {collection.participation.total > 1 && (
+                <span className="font-mono text-xs tabular-nums text-[var(--primary)]">
+                  {collection.participation.sealed} / {collection.participation.total} sealed
+                </span>
+              )}
             </div>
           ) : covers.length === 0 ? (
             <div className="col-span-3 flex items-center justify-center text-sm text-[var(--muted-foreground)]">

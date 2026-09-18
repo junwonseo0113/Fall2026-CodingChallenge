@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Lock } from "lucide-react";
+import { ParticipationBadge } from "@/components/ParticipationBadge";
 
 function countdownParts(target: Date) {
   const totalSeconds = Math.max(0, Math.floor((target.getTime() - Date.now()) / 1000));
@@ -15,9 +16,11 @@ function countdownParts(target: Date) {
  * calls onUnlocked once the clock hits zero so the page can refetch. */
 export function LockedCollectionView({
   unlockAt,
+  participation,
   onUnlocked,
 }: {
   unlockAt: string;
+  participation?: { sealed: number; total: number };
   onUnlocked: () => void;
 }) {
   const target = React.useMemo(() => new Date(unlockAt), [unlockAt]);
@@ -45,6 +48,7 @@ export function LockedCollectionView({
           It unlocks on {target.toLocaleString()}
         </p>
       </div>
+      {participation && <ParticipationBadge sealed={participation.sealed} total={participation.total} />}
       <div className="flex gap-3">
         {[
           { label: "Days", value: parts.days },

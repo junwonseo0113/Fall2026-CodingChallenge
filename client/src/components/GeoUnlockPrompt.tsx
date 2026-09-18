@@ -4,14 +4,17 @@ import { toast } from "sonner";
 import { api, apiErrorMessage } from "@/lib/api";
 import { getCurrentPosition } from "@/lib/geolocation";
 import { Button } from "@/components/ui/button";
+import { ParticipationBadge } from "@/components/ParticipationBadge";
 
 export function GeoUnlockPrompt({
   collectionId,
   radiusMeters,
+  participation,
   onVerified,
 }: {
   collectionId: string;
   radiusMeters: number | null;
+  participation: { sealed: number; total: number };
   onVerified: () => void;
 }) {
   const [verifying, setVerifying] = React.useState(false);
@@ -53,6 +56,7 @@ export function GeoUnlockPrompt({
             : "Prove your location to unlock."}
         </p>
       </div>
+      <ParticipationBadge sealed={participation.sealed} total={participation.total} />
       <Button onClick={verify} disabled={verifying}>
         {verifying ? "Checking..." : "Verify my location"}
       </Button>
