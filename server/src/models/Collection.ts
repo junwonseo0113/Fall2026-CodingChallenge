@@ -13,6 +13,9 @@ const itemSchema = new Schema(
     // items added via a plain pasted URL that isn't an Unsplash photo.
     credit: { type: String, default: "" },
     creditUrl: { type: String, default: "" },
+    // Dominant color swatch (hex), taken from Unsplash's own per-photo color
+    // field when the source is Unsplash. Empty for other sources.
+    color: { type: String, default: "" },
     // Quick self-organization chips, e.g. "wallpaper", "reference", "profile".
     tags: { type: [String], default: [] },
   },

@@ -5,6 +5,8 @@ import type { CollectionItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { saveImageToDevice } from "@/lib/saveToDevice";
+import { colorPlaceholderStyle } from "@/lib/utils";
+import { WallpaperPreviewDialog } from "@/components/WallpaperPreviewDialog";
 
 export const QUICK_TAGS = ["wallpaper", "reference", "profile"] as const;
 
@@ -54,16 +56,32 @@ export function ItemCard({
     }
   }
 
+  async function handleCopyColor() {
+    if (!item.color) return;
+    try {
+      await navigator.clipboard.writeText(item.color);
+      toast.success(`Copied ${item.color}`);
+    } catch {
+      toast.error("Couldn't copy that color");
+    }
+  }
+
   return (
     <div className="group relative mb-4 break-inside-avoid overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-sm)] transition-shadow duration-200 hover:shadow-[var(--shadow-md)]">
-      <img
-        src={item.imageUrl}
-        alt={item.title}
-        loading="lazy"
-        className="w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-      />
+      {/* Shows as a placeholder behind the image while it loads, and as a subtle
+          backdrop for transparent/thin images -- the dominant color comes straight
+          from Unsplash's own per-photo swatch. */}
+      <div style={colorPlaceholderStyle(item.color)}>
+        <img
+          src={item.imageUrl}
+          alt={item.title}
+          loading="lazy"
+          className="w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+        />
+      </div>
 
       <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <WallpaperPreviewDialog imageUrl={item.imageUrl} alt={item.title} />
         <Button
           size="icon"
           variant="outline"
@@ -150,19 +168,37 @@ export function ItemCard({
         </div>
       )}
 
-      {item.credit && (
-        <div className="border-t border-[var(--border)] px-3 py-1.5">
-          {item.creditUrl ? (
-            <a
-              href={item.creditUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-[10px] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:underline"
-            >
-              Photo by {item.credit} on Unsplash
-            </a>
+      {(item.credit || item.color) && (
+        <div className="flex items-center justify-between gap-2 border-t border-[var(--border)] px-3 py-1.5">
+          {item.credit ? (
+            item.creditUrl ? (
+              <a
+                href={item.creditUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[10px] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:underline"
+              >
+                Photo by {item.credit} on Unsplash
+              </a>
+            ) : (
+              <span className="text-[10px] text-[var(--muted-foreground)]">Photo by {item.credit}</span>
+            )
           ) : (
-            <span className="text-[10px] text-[var(--muted-foreground)]">Photo by {item.credit}</span>
+            <span />
+          )}
+          {item.color && (
+            <button
+              type="button"
+              onClick={handleCopyColor}
+              title={`Copy ${item.color}`}
+              className="flex shrink-0 items-center gap-1 rounded-full border border-[var(--border)] py-0.5 pl-0.5 pr-1.5 text-[9px] font-medium text-[var(--muted-foreground)] transition-colors hover:border-[var(--primary)] hover:text-[var(--foreground)]"
+            >
+              <span
+                className="h-3 w-3 rounded-full border border-[var(--border)]"
+                style={{ backgroundColor: item.color }}
+              />
+              {item.color}
+            </button>
           )}
         </div>
       )}

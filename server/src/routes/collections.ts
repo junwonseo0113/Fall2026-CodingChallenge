@@ -83,6 +83,7 @@ function serialize(collection: CollectionDocument, viewerId: string) {
       note: item.note,
       credit: item.credit,
       creditUrl: item.creditUrl,
+      color: item.color,
       tags: item.tags,
       addedBy: toUserSummary(item.addedBy),
       createdAt: (item as unknown as { createdAt: Date }).createdAt,
@@ -194,6 +195,13 @@ collectionsRouter.delete("/:id", async (req: AuthedRequest, res, next) => {
 // --- Items ---
 
 const urlOrEmpty = z.union([z.literal(""), z.string().url()]);
+// A color swatch is a cosmetic nicety, not something worth failing the whole
+// save over -- silently drops anything that isn't a real hex color instead
+// of rejecting the request.
+const hexColorOrEmpty = z
+  .string()
+  .optional()
+  .transform((value) => (value && /^#[0-9a-f]{6}$/i.test(value) ? value : ""));
 
 const addItemSchema = z.object({
   imageUrl: z.string().url(),
@@ -203,6 +211,7 @@ const addItemSchema = z.object({
   note: z.string().trim().max(1000).optional(),
   credit: z.string().trim().max(200).optional(),
   creditUrl: urlOrEmpty.optional(),
+  color: hexColorOrEmpty,
   tags: z.array(z.string().trim().min(1).max(30)).max(10).optional(),
   // Unsplash's own "download_location" tracking URL for this photo -- not
   // stored on the item, just pinged once below per their API guidelines.

@@ -123,6 +123,29 @@ Unsplash integration, hardened (bonus)
 - Download tracking: saving an Unsplash-sourced item pings its
   download_location URL once, so it counts toward the photographer's
   download stats as Unsplash's API guidelines require.
+- Color palette: Unsplash's own per-photo dominant-color swatch is carried
+  through search results, saved items, and pasted Unsplash links. It shows
+  as an instant loading placeholder behind thumbnails/saved images and as a
+  small hex-code chip on each saved item (click to copy).
+
+Today's visual (bonus)
+- A banner on the dashboard picks one Unsplash photo matched to your local
+  time of day (morning/sunset/night/etc.) and, if you grant location
+  permission, the current weather there (e.g. a rainy evening surfaces a
+  moody "rain sunset golden hour" pick) via Open-Meteo -- a free weather API
+  that needs no signup or API key, so this works with zero extra setup.
+  Location is entirely optional; declining it just falls back to
+  time-of-day only. The pick is stable for the day (not re-randomized on
+  every reload) and can be saved straight into any of your collections from
+  the banner itself.
+
+Wallpaper preview
+- A "preview as wallpaper" button on every saved item opens a phone-bezel
+  mockup (drawn with CSS, no image assets needed) showing that image as a
+  lock-screen wallpaper, cropped to the screen's aspect ratio, with a real
+  live clock (updates every second) and today's date overlaid on top --
+  so you can judge how an image would actually look as a wallpaper before
+  committing to it.
 
 Save to device
 - A download button on every saved item fetches the image and either

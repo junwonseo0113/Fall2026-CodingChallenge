@@ -91,8 +91,14 @@
   --shadow-glow: 0 8px 24px rgba(209, 121, 31, 0.25);
 }
 
-* {
-  border-color: var(--border);
+/* Restores Tailwind v3's default border color (v4 defaults to currentColor).
+   Scoped to @layer base so a utility like border-neutral-900 can still win --
+   an unlayered rule here would silently beat every border-<color> utility
+   app-wide regardless of specificity. */
+@layer base {
+  * {
+    border-color: var(--border);
+  }
 }
 
 html {

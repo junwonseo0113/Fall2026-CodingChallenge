@@ -3,6 +3,8 @@ import { z } from "zod";
 import { env } from "../config/env";
 import { AppError } from "../utils/AppError";
 import { requireAuth } from "../middleware/auth";
+import { toSearchResult, type UnsplashPhoto } from "../utils/unsplash";
+import { createTtlCache } from "../utils/ttlCache";
 
 export const searchRouter = Router();
 
@@ -13,41 +15,21 @@ const querySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
 });
 
-interface UnsplashPhoto {
-  id: string;
-  description: string | null;
-  alt_description: string | null;
-  urls: { raw: string; full: string; regular: string; small: string };
-  links: { html: string; download_location: string };
-  user: { name: string; links: { html: string } };
-}
-
 interface UnsplashSearchResponse {
   results: UnsplashPhoto[];
   total_pages: number;
 }
 
-/** Grid thumbnails only need to be small and can be more aggressively compressed. */
-function thumbSizeOf(rawUrl: string): string {
-  return `${rawUrl}&w=400&q=70&fit=crop&auto=format`;
-}
-
-/** Only fetched/rendered at full size once an item is actually saved, not for every grid tile. */
-function saveSizeOf(rawUrl: string): string {
-  return `${rawUrl}&w=2000&q=80&auto=format`;
-}
-
-interface CacheEntry {
-  expiresAt: number;
-  payload: { totalPages: number; results: unknown[] };
+interface SearchPayload {
+  totalPages: number;
+  results: ReturnType<typeof toSearchResult>[];
 }
 
 // Unsplash's free tier allows only 50 requests/hour -- caching identical
 // searches for a few minutes absorbs repeat/typo-retry queries without
 // ever risking a stale result (5 min is short enough that new photos
 // still show up promptly).
-const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000;
-const searchCache = new Map<string, CacheEntry>();
+const searchCache = createTtlCache<SearchPayload>(5 * 60 * 1000);
 
 function cacheKey(q: string, page: number): string {
   return `${q.toLowerCase()}::${page}`;
@@ -73,8 +55,8 @@ searchRouter.get("/", async (req, res, next) => {
 
     const key = cacheKey(q, page);
     const cached = searchCache.get(key);
-    if (cached && cached.expiresAt > Date.now()) {
-      res.json(cached.payload);
+    if (cached) {
+      res.json(cached);
       return;
     }
 
@@ -95,19 +77,10 @@ searchRouter.get("/", async (req, res, next) => {
 
     const payload = {
       totalPages: data.total_pages,
-      results: data.results.map((photo) => ({
-        id: photo.id,
-        title: photo.description ?? photo.alt_description ?? "",
-        imageUrl: saveSizeOf(photo.urls.raw),
-        thumbUrl: thumbSizeOf(photo.urls.raw),
-        sourceUrl: photo.links.html,
-        credit: photo.user.name,
-        creditUrl: photo.user.links.html,
-        downloadLocation: photo.links.download_location,
-      })),
+      results: data.results.map(toSearchResult),
     };
 
-    searchCache.set(key, { expiresAt: Date.now() + SEARCH_CACHE_TTL_MS, payload });
+    searchCache.set(key, payload);
     res.json(payload);
   } catch (err) {
     next(err);

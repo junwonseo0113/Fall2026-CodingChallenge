@@ -3,6 +3,7 @@ import { Search, Plus, Check, Link2, X as XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { api, apiErrorMessage } from "@/lib/api";
 import type { SearchResult } from "@/lib/types";
+import { colorPlaceholderStyle } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -110,6 +111,7 @@ export function ImageSearchDialog({
         credit: resolved.data.credit,
         creditUrl: resolved.data.creditUrl,
         downloadLocation: resolved.data.downloadLocation,
+        color: resolved.data.color,
       });
       setPastedUrl("");
       setPasteOpen(false);
@@ -184,7 +186,11 @@ export function ImageSearchDialog({
             {results.map((result) => {
               const saved = savedImageUrls.has(result.imageUrl);
               return (
-                <div key={result.id} className="group relative overflow-hidden rounded-xl">
+                <div
+                  key={result.id}
+                  className="group relative overflow-hidden rounded-xl"
+                  style={colorPlaceholderStyle(result.color)}
+                >
                   <img src={result.thumbUrl} alt={result.title} className="aspect-square w-full object-cover" />
                   <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 via-transparent to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
                     <Button

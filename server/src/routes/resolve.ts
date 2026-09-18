@@ -46,7 +46,11 @@ interface ResolvedImage {
   credit: string;
   creditUrl: string;
   downloadLocation: string;
+  color: string; // Unsplash's dominant-color swatch, e.g. "#E0E0E0" -- empty when unknown (non-Unsplash sources)
 }
+
+/** Attribution/color fields are only known for Unsplash sources -- empty for anything else. */
+const EMPTY_ATTRIBUTION = { credit: "", creditUrl: "", downloadLocation: "", color: "" };
 
 /** Unsplash photo *page* URLs (unsplash.com/photos/slug-ID) aren't themselves
  * image files -- extracts the photo ID so we can hit the API for the real
@@ -71,6 +75,7 @@ async function resolveUnsplashPhoto(photoId: string): Promise<ResolvedImage> {
   });
   if (!response.ok) throw new AppError(404, "Couldn't find that Unsplash photo");
   const photo = (await response.json()) as {
+    color: string | null;
     urls: { raw: string };
     links: { html: string; download_location: string };
     user: { name: string; links: { html: string } };
@@ -82,6 +87,7 @@ async function resolveUnsplashPhoto(photoId: string): Promise<ResolvedImage> {
     credit: photo.user.name,
     creditUrl: photo.user.links.html,
     downloadLocation: photo.links.download_location,
+    color: photo.color ?? "",
   };
 }
 
@@ -117,14 +123,13 @@ async function resolveGenericUrl(url: string): Promise<ResolvedImage> {
   const contentType = response.headers.get("content-type") ?? "";
   if (contentType.startsWith("image/")) {
     response.body?.cancel().catch(() => {});
-    return { imageUrl: url, thumbUrl: url, sourceUrl: url, credit: "", creditUrl: "", downloadLocation: "" };
+    return { imageUrl: url, thumbUrl: url, sourceUrl: url, ...EMPTY_ATTRIBUTION };
   }
 
   if (contentType.includes("text/html")) {
     const html = await readBodyPrefix(response);
     const ogImage = extractOgImage(html);
-    if (ogImage)
-      return { imageUrl: ogImage, thumbUrl: ogImage, sourceUrl: url, credit: "", creditUrl: "", downloadLocation: "" };
+    if (ogImage) return { imageUrl: ogImage, thumbUrl: ogImage, sourceUrl: url, ...EMPTY_ATTRIBUTION };
   }
 
   throw new AppError(400, "Couldn't find an image at that URL");
@@ -152,7 +157,7 @@ resolveRouter.get("/", async (req, res, next) => {
 
     // Skip the network round-trip for the common case where the extension already tells us.
     if (IMAGE_EXTENSION_RE.test(parsed.pathname)) {
-      res.json({ imageUrl: url, thumbUrl: url, sourceUrl: url, credit: "", creditUrl: "", downloadLocation: "" });
+      res.json({ imageUrl: url, thumbUrl: url, sourceUrl: url, ...EMPTY_ATTRIBUTION });
       return;
     }
 

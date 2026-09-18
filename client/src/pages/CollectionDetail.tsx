@@ -75,6 +75,7 @@ export function CollectionDetail() {
       note: "",
       credit: result.credit,
       creditUrl: result.creditUrl ?? "",
+      color: result.color,
       tags: [],
       addedBy: user,
       createdAt: new Date().toISOString(),
@@ -90,6 +91,7 @@ export function CollectionDetail() {
         credit: result.credit,
         creditUrl: result.creditUrl,
         downloadLocation: result.downloadLocation,
+        color: result.color,
       });
       setCollection(res.data.collection);
       toast.success("Saved to collection");

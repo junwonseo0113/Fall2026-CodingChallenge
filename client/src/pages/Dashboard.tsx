@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Navbar } from "@/components/Navbar";
 import { CollectionCard } from "@/components/CollectionCard";
 import { CreateCollectionDialog } from "@/components/CreateCollectionDialog";
+import { TodayVisual } from "@/components/TodayVisual";
 
 export function Dashboard() {
   const { user } = useAuth();
@@ -42,6 +43,8 @@ export function Dashboard() {
     <div>
       <Navbar />
       <main className="mx-auto max-w-6xl px-4 py-8">
+        <TodayVisual collections={collections ?? []} onSaved={loadCollections} />
+
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-semibold tracking-tight">Your collections</h1>
           <CreateCollectionDialog onCreate={handleCreate} />

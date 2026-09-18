@@ -6,6 +6,7 @@ import { collectionsRouter } from "./routes/collections";
 import { publicRouter } from "./routes/public";
 import { searchRouter } from "./routes/search";
 import { resolveRouter } from "./routes/resolve";
+import { todayRouter } from "./routes/today";
 import { notFoundHandler, errorHandler } from "./middleware/errorHandler";
 
 export function createApp() {
@@ -21,6 +22,7 @@ export function createApp() {
   app.use("/api/public", publicRouter);
   app.use("/api/search", searchRouter);
   app.use("/api/resolve-url", resolveRouter);
+  app.use("/api/today-visual", todayRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

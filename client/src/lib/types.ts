@@ -13,6 +13,7 @@ export interface CollectionItem {
   note: string;
   credit: string;
   creditUrl: string;
+  color?: string; // dominant-color swatch (hex), from Unsplash's own per-photo color field
   tags: string[];
   addedBy: User | null;
   createdAt: string;
@@ -41,4 +42,10 @@ export interface SearchResult {
   credit: string;
   creditUrl?: string;
   downloadLocation?: string;
+  color?: string;
+}
+
+export interface TodayVisual {
+  summary: string; // e.g. "Rainy evening, 14°C" or just "Sunset" when weather is unavailable
+  result: SearchResult | null;
 }
