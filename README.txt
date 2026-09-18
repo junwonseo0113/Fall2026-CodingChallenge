@@ -120,6 +120,17 @@ Unsplash integration, hardened (bonus)
   loopback/private-network hosts.
 - Photographer attribution: "Photo by X on Unsplash" is stored and shown
   on every item sourced from Unsplash, per their API usage guidelines.
+- Download tracking: saving an Unsplash-sourced item pings its
+  download_location URL once, so it counts toward the photographer's
+  download stats as Unsplash's API guidelines require.
+
+Save to device
+- A download button on every saved item fetches the image and either
+  hands it to the OS share sheet (Web Share API, where supported -- the
+  share sheet itself is the real "save to Photos" permission prompt) or
+  triggers a browser download otherwise. If the source host blocks
+  cross-origin fetches, it opens the image in a new tab instead of
+  breaking, so there's always a way to save it.
 
 ------------------------------------------------------------
 REFLECTION (under 100 words)
