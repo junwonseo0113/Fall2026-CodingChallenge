@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, ImagePlus, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, ImagePlus, Play, Search, Trash2 } from "lucide-react";
 import { api, apiErrorMessage } from "@/lib/api";
 import type { Collection, SearchResult } from "@/lib/types";
 import { relativeTime } from "@/lib/relativeTime";
@@ -18,6 +18,7 @@ import { EditCollectionDialog } from "@/components/EditCollectionDialog";
 import { LockedCollectionView } from "@/components/LockedCollectionView";
 import { GeoUnlockPrompt } from "@/components/GeoUnlockPrompt";
 import { CollectionLockBanners } from "@/components/CollectionLockBanners";
+import { RadioPlayer } from "@/components/RadioPlayer";
 import type { LocationLockValue } from "@/components/LocationLockField";
 
 export function CollectionDetail() {
@@ -26,6 +27,7 @@ export function CollectionDetail() {
   const navigate = useNavigate();
   const [collection, setCollection] = React.useState<Collection | null>(null);
   const [searchOpen, setSearchOpen] = React.useState(false);
+  const [radioOpen, setRadioOpen] = React.useState(false);
   const [filterQuery, setFilterQuery] = React.useState("");
 
   const load = React.useCallback(async () => {
@@ -65,6 +67,8 @@ export function CollectionDetail() {
           item.note.toLowerCase().includes(normalizedFilter)
       )
     : collection.items;
+
+  const itemsWithAudio = collection.items.filter((item) => item.audioData);
 
   async function handleAddFromSearch(result: SearchResult) {
     // Optimistic update: show the item immediately, roll back if the request fails.
@@ -194,6 +198,12 @@ export function CollectionDetail() {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            {!collection.isLocked && itemsWithAudio.length > 0 && (
+              <Button onClick={() => setRadioOpen(true)}>
+                <Play className="h-4 w-4" />
+                Play our radio
+              </Button>
+            )}
             {canEdit && (
               <Button onClick={() => setSearchOpen(true)}>
                 <ImagePlus className="h-4 w-4" />
@@ -272,6 +282,8 @@ export function CollectionDetail() {
         onAdd={handleAddFromSearch}
         savedImageUrls={new Set(collection.items.map((i) => i.imageUrl))}
       />
+
+      <RadioPlayer open={radioOpen} onOpenChange={setRadioOpen} items={itemsWithAudio} />
     </div>
   );
 }
